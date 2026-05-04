@@ -1,258 +1,442 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, RefreshCw, CheckCircle2, Clock, ChefHat, Flame, PackageCheck, Inbox, MapPin, Phone } from 'lucide-react';
-import API_URL from '../../apiConfig';
+import { LogOut, RefreshCw, Clock, ChefHat, CheckCircle2, Flame, Inbox, PackageCheck } from 'lucide-react';
 
-const STATUS_CONFIG = {
-    pending:   { label: 'New Order',  color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  next: 'preparing', nextLabel: '🔥 Start Cooking', icon: '🆕' },
-    preparing: { label: 'Cooking',    color: '#3B82F6', bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.3)',  next: 'ready',    nextLabel: '✅ Mark Ready',    icon: '👨‍🍳' },
-    ready:     { label: 'Ready',      color: '#10B981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.3)',  next: 'completed', nextLabel: '📦 Complete',    icon: '✅' },
-};
+import API_URL from '../../apiConfig';
 
 const KitchenView = () => {
     const [orders, setOrders] = useState([]);
     const [filter, setFilter] = useState('All');
-    const [refreshing, setRefreshing] = useState(false);
-    const [now, setNow] = useState(new Date());
     const { logout, user, token } = useAuth();
 
-    const fetchOrders = async (showSpinner = false) => {
-        if (!token) return;
-        if (showSpinner) setRefreshing(true);
+    const fetchOrders = async () => {
+        if (!user?.id) {
+            return;
+        }
+
         try {
             const res = await fetch(`${API_URL}/api/orders/staff/active`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) setOrders(await res.json());
-        } catch (err) { console.error(err); }
-        finally { if (showSpinner) setRefreshing(false); }
+            if (res.ok) {
+                const data = await res.json();
+                setOrders(data);
+            }
+        } catch (err) {
+            console.error('Fetch error', err);
+        }
     };
 
     useEffect(() => {
-        fetchOrders();
-        const poll = setInterval(fetchOrders, 10000);
-        const tick = setInterval(() => setNow(new Date()), 60000);
-        return () => { clearInterval(poll); clearInterval(tick); };
-    }, [token]);
+        if (user?.id) {
+            fetchOrders();
+            const interval = setInterval(fetchOrders, 10000); // Poll every 10s
+            return () => clearInterval(interval);
+        }
+    }, [user?.id]);
 
     const updateStatus = async (orderId, newStatus) => {
+        if (!user?.id) {
+            alert('Authentication error. Please log in again.');
+            return;
+        }
+
         try {
             await fetch(`${API_URL}/api/orders/${orderId}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ status: newStatus })
             });
             fetchOrders();
-        } catch { alert('Update failed'); }
+        } catch (err) {
+            alert('Update failed');
+        }
     };
 
-    const getMinutesAgo = (dateStr) => {
-        const diff = Math.floor((new Date() - new Date(dateStr)) / 60000);
-        if (diff < 1) return 'just now';
-        if (diff === 1) return '1 min ago';
-        return `${diff} mins ago`;
-    };
-
-    const filtered = filter === 'All' ? orders : orders.filter(o => o.status === filter.toLowerCase());
-    const counts = {
+    const stats = {
+        total: orders.length,
         pending: orders.filter(o => o.status === 'pending').length,
         preparing: orders.filter(o => o.status === 'preparing').length,
         ready: orders.filter(o => o.status === 'ready').length,
+        completed: orders.filter(o => o.status === 'completed').length
     };
 
-    return (
-        <div style={{ minHeight: '100vh', background: '#0D0D0D', color: 'white', fontFamily: "'Inter',sans-serif" }}>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                @keyframes fadeSlide { from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)} }
-                @keyframes spin { to{transform:rotate(360deg)} }
-                @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.3} }
-                .glass { background:rgba(255,255,255,0.04);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08); }
-                .order-card { animation:fadeSlide 0.4s ease both;border-radius:20px;transition:transform 0.2s ease,box-shadow 0.2s ease; }
-                .order-card:hover { transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.4); }
-                .action-btn { border:none;border-radius:12px;font-weight:700;font-size:0.85rem;padding:10px 16px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s ease; }
-                .action-btn:hover { transform:translateY(-1px);filter:brightness(1.1); }
-                .filter-tab { padding:8px 18px;border-radius:20px;border:none;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:'Inter',sans-serif;transition:all 0.25s ease; }
-                .stat-card { border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:14px; }
-            `}</style>
+    const filteredOrders = filter === 'All' ? orders : orders.filter(o => o.status === filter.toLowerCase());
 
-            {/* Header */}
-            <div className="glass" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ background: 'linear-gradient(135deg,#E23744,#DC2626)', borderRadius: 14, width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(226,55,68,0.35)' }}>
-                        <ChefHat size={22} color="white" />
-                    </div>
-                    <div>
-                        <div style={{ fontWeight: 800, fontSize: 17, background: 'linear-gradient(135deg,#E23744,#F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Kitchen Panel</div>
-                        <div style={{ fontSize: 11, color: '#6B7280' }}>
-                            Hi {user?.name} ·&nbsp;
-                            <span style={{ color: '#10B981' }}>● Live</span>
-                        </div>
-                    </div>
+    const OrderCard = ({ order }) => (
+        <div key={order._id} className="glass-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div>
+                    <p style={{ fontSize: '0.65rem', color: '#6B7280', margin: '0 0 2px 0', letterSpacing: '1px', fontWeight: 700 }}>ORDER TICKET</p>
+                    <p style={{ fontWeight: 800, fontSize: '1.25rem', color: 'white', margin: 0 }}>#{order._id.slice(-6).toUpperCase()}</p>
+                    <p style={{ fontSize: '0.7rem', color: '#9CA3AF', margin: '4px 0 0 0', fontWeight: 600 }}>
+                        Ordered: {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => fetchOrders(true)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontFamily: "'Inter',sans-serif" }}>
-                        <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
-                        Refresh
-                    </button>
-                    <button onClick={() => { logout(); }} style={{ background: 'rgba(226,55,68,0.12)', border: '1px solid rgba(226,55,68,0.2)', color: '#E23744', padding: '8px 12px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontFamily: "'Inter',sans-serif" }}>
-                        <LogOut size={14} /> Out
-                    </button>
+                <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontSize: '0.65rem', color: '#6B7280', margin: '0 0 2px 0', letterSpacing: '1px', fontWeight: 700 }}>PICKUP TIME</p>
+                    <div style={{
+                        background: 'rgba(226, 55, 68, 0.1)',
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(226, 55, 68, 0.2)',
+                        marginTop: '4px'
+                    }}>
+                        <p style={{ fontWeight: 800, color: '#E23744', margin: 0, fontSize: '1.1rem' }}>
+                            {order.pickupTime || new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div style={{ maxWidth: 700, margin: '0 auto', padding: '20px 16px 40px' }}>
-
-                {/* Stats Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-                    {[
-                        { label: 'New', count: counts.pending, color: '#F59E0B', icon: '🆕' },
-                        { label: 'Cooking', count: counts.preparing, color: '#3B82F6', icon: '🔥' },
-                        { label: 'Ready', count: counts.ready, color: '#10B981', icon: '✅' },
-                    ].map(s => (
-                        <div key={s.label} className="glass stat-card" style={{ borderLeft: `3px solid ${s.color}` }}>
-                            <div style={{ fontSize: 24 }}>{s.icon}</div>
-                            <div>
-                                <div style={{ fontSize: 22, fontWeight: 900, color: s.color }}>{s.count}</div>
-                                <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>{s.label}</div>
-                            </div>
+            <div style={{ marginBottom: '2rem', minHeight: '80px' }}>
+                <p style={{ fontSize: '0.75rem', color: '#9CA3AF', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 700 }}>Customer: {order.user?.name || 'Guest'}</p>
+                {order.items.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '0.75rem' }}>
+                        {/* Veg/Non-Veg Badge */}
+                        <div style={{
+                            width: '18px',
+                            height: '18px',
+                            border: `2px solid ${item.product?.isVeg !== false ? '#22C55E' : '#EF4444'}`,
+                            borderRadius: '3px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'white',
+                            flexShrink: 0
+                        }}>
+                            {item.product?.isVeg !== false ? (
+                                <div style={{
+                                    width: '8px',
+                                    height: '8px',
+                                    borderRadius: '50%',
+                                    background: '#22C55E'
+                                }} />
+                            ) : (
+                                <div style={{
+                                    width: 0,
+                                    height: 0,
+                                    borderLeft: '4px solid transparent',
+                                    borderRight: '4px solid transparent',
+                                    borderBottom: '7px solid #EF4444'
+                                }} />
+                            )}
                         </div>
-                    ))}
+
+                        <div style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '8px',
+                            background: 'rgba(226, 55, 68, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.9rem',
+                            fontWeight: 800,
+                            color: '#E23744',
+                            border: '1px solid rgba(226, 55, 68, 0.2)'
+                        }}>
+                            {item.quantity}
+                        </div>
+                        <span style={{ color: '#E5E7EB', fontWeight: 500, fontSize: '1.05rem' }}>{item.product?.name || 'Item Expired'}</span>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ marginTop: 'auto' }}>
+                {order.status === 'pending' && (
+                    <button
+                        onClick={() => updateStatus(order._id, 'preparing')}
+                        className="btn-action"
+                        style={{ backgroundColor: '#E23744', color: 'white', width: '100%', boxShadow: '0 8px 20px rgba(226, 55, 68, 0.2)' }}
+                    >
+                        Accept & Start Preparing
+                    </button>
+                )}
+                {order.status === 'preparing' && (
+                    <button
+                        onClick={() => updateStatus(order._id, 'ready')}
+                        className="btn-action"
+                        style={{ backgroundColor: '#F59E0B', color: 'white', width: '100%', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.2)' }}
+                    >
+                        Mark as Ready to Pickup
+                    </button>
+                )}
+                {order.status === 'ready' && (
+                    <button
+                        onClick={() => updateStatus(order._id, 'completed')}
+                        className="btn-action"
+                        style={{ backgroundColor: '#22C55E', color: 'white', width: '100%', boxShadow: '0 8px 20px rgba(34, 197, 94, 0.2)' }}
+                    >
+                        Handover & Complete
+                    </button>
+                )}
+                {order.status === 'completed' && (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '0.8rem',
+                        background: 'rgba(34, 197, 94, 0.1)',
+                        borderRadius: '12px',
+                        color: '#22C55E',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                    }}>
+                        <CheckCircle2 size={18} /> Completed Today
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    return (
+        <div style={{ minHeight: '100vh', backgroundColor: '#0D0D0D', color: 'white', position: 'relative', overflowX: 'hidden' }}>
+            {/* 2026 Graphics & UI Styles */}
+            <style>{`
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px) rotate(0deg); }
+                    50% { transform: translateY(-15px) rotate(5deg); }
+                }
+                .floating-emoji {
+                    position: absolute;
+                    font-size: 3.5rem;
+                    opacity: 0.1;
+                    pointer-events: none;
+                    animation: float 8s ease-in-out infinite;
+                    z-index: 1;
+                }
+                .glass-card {
+                    background: rgba(26, 26, 28, 0.95);
+                    border-radius: 1.5rem;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    padding: 1.5rem;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    z-index: 10;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .glass-card:hover {
+                    border-color: rgba(226, 55, 68, 0.3);
+                    transform: translateY(-5px);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+                }
+                .stat-card {
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    border-radius: 1.25rem;
+                    padding: 1.5rem;
+                    text-align: center;
+                    transition: all 0.3s ease;
+                }
+                .stat-card:hover {
+                    background: rgba(255, 255, 255, 0.05);
+                }
+                .btn-action {
+                    padding: 0.8rem 1.2rem;
+                    border-radius: 12px;
+                    border: none;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    font-size: 0.95rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                }
+                .btn-action:hover {
+                    filter: brightness(1.1);
+                    transform: scale(1.02);
+                }
+                .filter-pill {
+                    padding: 0.6rem 1.5rem;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    cursor: pointer;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                    white-space: nowrap;
+                }
+                .section-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 1.25rem;
+                    font-weight: 800;
+                    margin: 3rem 0 1.5rem 0;
+                    color: white;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+                .orders-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+                    gap: 2rem;
+                }
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    gap: 1.5rem;
+                    marginBottom: 3rem;
+                }
+                .main-container {
+                    maxWidth: 1400px;
+                    margin: 0 auto;
+                    padding: 2.5rem;
+                }
+                
+                @media (max-width: 768px) {
+                    .main-container { padding: 1.5rem; }
+                    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+                    .orders-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+                    .header-title { font-size: 1.2rem !important; }
+                    .header-subtitle { font-size: 0.7rem !important; }
+                    .filter-bar { overflow-x: auto; padding-bottom: 5px; }
+                    .section-title { font-size: 1rem; margin: 2rem 0 1rem 0; }
+                    .header-actions { gap: 0.5rem !important; }
+                    .btn-sync span { display: none; }
+                }
+            `}</style>
+
+            {/* Background Decor */}
+            <div className="floating-emoji" style={{ top: '10%', right: '5%' }}>🍳</div>
+            <div className="floating-emoji" style={{ top: '60%', left: '3%' }}>🔪</div>
+            <div className="floating-emoji" style={{ bottom: '10%', right: '15%' }}>🥗</div>
+
+            {/* Header */}
+            <header style={{
+                background: '#111111',
+                padding: '1rem 1.5rem',
+                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                backdropFilter: 'blur(10px)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                        background: 'linear-gradient(135deg, #E23744 0%, #B91C1C 100%)',
+                        padding: '8px',
+                        borderRadius: '10px',
+                        boxShadow: '0 8px 20px rgba(226, 55, 68, 0.3)'
+                    }}>
+                        <ChefHat color="white" size={20} />
+                    </div>
+                    <div>
+                        <h1 className="header-title" style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Kitchen</h1>
+                        <p className="header-subtitle" style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>Terminal v2.0</p>
+                    </div>
                 </div>
 
-                {/* Filter Tabs */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
-                    {['All', 'Pending', 'Preparing', 'Ready'].map(f => (
-                        <button key={f} className="filter-tab" onClick={() => setFilter(f)} style={{
-                            background: filter === f ? 'linear-gradient(135deg,#E23744,#DC2626)' : 'rgba(255,255,255,0.05)',
-                            color: filter === f ? 'white' : '#9CA3AF',
-                            border: filter === f ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                            boxShadow: filter === f ? '0 4px 15px rgba(226,55,68,0.3)' : 'none',
-                            whiteSpace: 'nowrap'
-                        }}>
-                            {f} {f !== 'All' && counts[f.toLowerCase()] > 0 ? `(${counts[f.toLowerCase()]})` : ''}
+                <div className="header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button onClick={fetchOrders} className="btn-sync" style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: 'white',
+                        padding: '0.6rem 1rem',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontWeight: 600
+                    }}>
+                        <RefreshCw size={18} /> <span>Sync</span>
+                    </button>
+                    <button onClick={logout} style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        color: '#F87171',
+                        padding: '0.6rem 1rem',
+                        borderRadius: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                    }}><LogOut size={18} /></button>
+                </div>
+            </header>
+
+            <div className="main-container">
+                {/* Stats Dashboard */}
+                <div className="stats-grid">
+                    <div className="stat-card">
+                        <p style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '0.5rem', fontWeight: 600 }}>INCOMING</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#F59E0B' }}>{stats.pending}</p>
+                    </div>
+                    <div className="stat-card" style={{ borderTop: '4px solid #E23744' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '0.5rem', fontWeight: 600 }}>COOKING</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#E23744' }}>{stats.preparing}</p>
+                    </div>
+                    <div className="stat-card" style={{ borderTop: '4px solid #22C55E' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '0.5rem', fontWeight: 600 }}>READY</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#22C55E' }}>{stats.ready}</p>
+                    </div>
+                    <div className="stat-card" style={{ borderTop: '4px solid #6B7280' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '0.5rem', fontWeight: 600 }}>DONE</p>
+                        <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#9CA3AF' }}>{stats.completed}</p>
+                    </div>
+                </div>
+
+                {/* Navigation / Filters */}
+                <div className="filter-bar" style={{ display: 'flex', gap: '0.6rem', marginBottom: '2rem' }}>
+                    {['All', 'Pending', 'Preparing', 'Ready', 'Completed'].map(f => (
+                        <button
+                            key={f}
+                            onClick={() => setFilter(f)}
+                            className="filter-pill"
+                            style={{
+                                backgroundColor: filter === f ? '#E23744' : 'rgba(255,255,255,0.05)',
+                                color: filter === f ? 'white' : '#9CA3AF',
+                                borderColor: filter === f ? '#E23744' : 'rgba(255,255,255,0.1)'
+                            }}
+                        >
+                            {f}
                         </button>
                     ))}
                 </div>
 
-                {/* Orders */}
-                {filtered.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '80px 0', color: '#4B5563' }}>
-                        <Inbox size={56} style={{ marginBottom: 16, opacity: 0.3 }} />
-                        <p style={{ fontSize: 16, fontWeight: 600 }}>No orders right now</p>
-                        <p style={{ fontSize: 13, marginTop: 6 }}>New orders will appear here automatically</p>
-                    </div>
+                {/* Orders Grid - Grouped if filter is "All" */}
+                {filter === 'All' ? (
+                    <>
+                        {stats.pending > 0 && (
+                            <div className="section-title"><Inbox color="#F59E0B" size={20} /> New Orders ({stats.pending})</div>
+                        )}
+                        <div className="orders-grid">
+                            {orders.filter(o => o.status === 'pending').map(o => <OrderCard key={o._id} order={o} />)}
+                        </div>
+
+                        {stats.preparing > 0 && (
+                            <div className="section-title"><Flame color="#E23744" size={20} /> In Preparation ({stats.preparing})</div>
+                        )}
+                        <div className="orders-grid">
+                            {orders.filter(o => o.status === 'preparing').map(o => <OrderCard key={o._id} order={o} />)}
+                        </div>
+
+                        {stats.ready > 0 && (
+                            <div className="section-title"><PackageCheck color="#22C55E" size={20} /> Ready for Pickup ({stats.ready})</div>
+                        )}
+                        <div className="orders-grid">
+                            {orders.filter(o => o.status === 'ready').map(o => <OrderCard key={o._id} order={o} />)}
+                        </div>
+                    </>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {filtered.map((order, idx) => {
-                            const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
-                            const isCabin = order.deliveryType === 'cabin' || order.cabinNumber;
-                            return (
-                                <div key={order._id} className="glass order-card" style={{ padding: 18, animationDelay: `${idx * 0.06}s`, borderLeft: `3px solid ${cfg.color}` }}>
-
-                                    {/* Top row */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                                        <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                                <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>
-                                                    #{order._id?.slice(-6).toUpperCase()}
-                                                </span>
-                                                <span style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
-                                                    {cfg.icon} {cfg.label}
-                                                </span>
-                                                {isCabin && (
-                                                    <span style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.3)', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
-                                                        🚪 Cabin
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                <Clock size={11} /> {getMinutesAgo(order.createdAt)}
-                                            </div>
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontWeight: 800, fontSize: 16, color: '#E23744' }}>₹{order.totalAmount}</div>
-                                            <div style={{ fontSize: 11, color: '#6B7280' }}>{order.items?.length} item{order.items?.length !== 1 ? 's' : ''}</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Delivery info */}
-                                    {isCabin && order.cabinNumber && (
-                                        <div style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 10, padding: '8px 12px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <MapPin size={14} color="#a78bfa" />
-                                            <span style={{ fontSize: 13, color: '#a78bfa', fontWeight: 700 }}>Deliver to Cabin {order.cabinNumber}</span>
-                                        </div>
-                                    )}
-                                    {!isCabin && order.pickupTime && order.pickupTime !== 'Cabin Delivery' && (
-                                        <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, padding: '8px 12px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <Clock size={14} color="#60a5fa" />
-                                            <span style={{ fontSize: 13, color: '#60a5fa', fontWeight: 600 }}>Pickup: {order.pickupTime}</span>
-                                        </div>
-                                    )}
-
-                                    {/* Customer / Lecturer Details */}
-                                    {order.user && (
-                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '10px 14px', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: '10px 20px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{ fontSize: 13 }}>👤</span>
-                                                <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>{order.user.name}</span>
-                                                {order.user.role === 'lecturer' && (
-                                                    <span style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.3)', padding: '1px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>Lecturer</span>
-                                                )}
-                                            </div>
-                                            {order.user.phone && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                    <Phone size={13} color="#10B981" />
-                                                    <a href={`tel:${order.user.phone}`} style={{ fontSize: 13, fontWeight: 600, color: '#10B981', textDecoration: 'none' }}>{order.user.phone}</a>
-                                                </div>
-                                            )}
-                                            {order.user.cabinNumber && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                    <span style={{ fontSize: 13 }}>🚪</span>
-                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa' }}>Cabin {order.user.cabinNumber}</span>
-                                                </div>
-                                            )}
-                                            {order.user.department && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                    <span style={{ fontSize: 13 }}>🏫</span>
-                                                    <span style={{ fontSize: 12, color: '#9CA3AF' }}>{order.user.department}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Items */}
-                                    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '10px 14px', marginBottom: 14 }}>
-                                        {order.items?.map((item, i) => (
-                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: i < order.items.length - 1 ? 6 : 0, marginBottom: i < order.items.length - 1 ? 6 : 0, borderBottom: i < order.items.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                                                <span style={{ fontSize: 13, color: '#D1D5DB' }}>
-                                                    <span style={{ fontWeight: 700, color: '#E23744', marginRight: 6 }}>×{item.quantity}</span>
-                                                    {item.product?.name || 'Item'}
-                                                </span>
-                                                <span style={{ fontSize: 13, color: '#9CA3AF' }}>₹{item.price * item.quantity}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Action Button */}
-                                    {cfg.next && (
-                                        <button className="action-btn" onClick={() => updateStatus(order._id, cfg.next)}
-                                            style={{
-                                                width: '100%',
-                                                background: cfg.next === 'preparing' ? 'linear-gradient(135deg,#F59E0B,#D97706)' :
-                                                             cfg.next === 'ready'     ? 'linear-gradient(135deg,#10B981,#059669)' :
-                                                             'linear-gradient(135deg,#6B7280,#4B5563)',
-                                                color: 'white',
-                                                boxShadow: cfg.next === 'preparing' ? '0 4px 15px rgba(245,158,11,0.3)' :
-                                                            cfg.next === 'ready'     ? '0 4px 15px rgba(16,185,129,0.3)' : 'none'
-                                            }}>
-                                            {cfg.nextLabel}
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
+                    <div className="orders-grid">
+                        {filteredOrders.length === 0 ? (
+                            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem 0' }}>
+                                <ChefHat size={48} style={{ opacity: 0.1, color: 'white', marginBottom: '1rem' }} />
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.5rem 0' }}>No {filter.toLowerCase()} orders</h2>
+                            </div>
+                        ) : (
+                            filteredOrders.map(o => <OrderCard key={o._id} order={o} />)
+                        )}
                     </div>
                 )}
             </div>
