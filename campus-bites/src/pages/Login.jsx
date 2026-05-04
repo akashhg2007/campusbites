@@ -545,6 +545,57 @@ const Login = () => {
                     Create New Account
                 </Link>
 
+                {/* Lecturer Portal Button */}
+                <div style={{ marginTop: '1rem', position: 'relative' }}>
+                    {/* Glow effect */}
+                    <div style={{
+                        position: 'absolute', inset: -1,
+                        background: 'linear-gradient(135deg, #7c3aed, #a78bfa, #7c3aed)',
+                        borderRadius: '1rem',
+                        filter: 'blur(6px)',
+                        opacity: 0.5,
+                        animation: 'pulseGlow 2.5s ease-in-out infinite'
+                    }} />
+                    <Link to="/lecturer" style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        padding: '1rem',
+                        background: 'linear-gradient(135deg, rgba(124,58,237,0.25), rgba(167,139,250,0.15))',
+                        border: '1px solid rgba(167,139,250,0.4)',
+                        borderRadius: '1rem',
+                        color: '#c4b5fd',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        transition: 'all 0.3s ease',
+                        backdropFilter: 'blur(10px)'
+                    }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(124,58,237,0.4), rgba(167,139,250,0.25))';
+                            e.currentTarget.style.borderColor = 'rgba(167,139,250,0.7)';
+                            e.currentTarget.style.color = 'white';
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 8px 25px rgba(124,58,237,0.35)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(124,58,237,0.25), rgba(167,139,250,0.15))';
+                            e.currentTarget.style.borderColor = 'rgba(167,139,250,0.4)';
+                            e.currentTarget.style.color = '#c4b5fd';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}>
+                        <span style={{ fontSize: '1.2rem' }}>🎓</span>
+                        <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Lecturer Portal</div>
+                            <div style={{ fontSize: '0.72rem', opacity: 0.7, fontWeight: 400 }}>Faculty cabin delivery ordering</div>
+                        </div>
+                        <span style={{ marginLeft: 'auto', fontSize: '0.85rem', opacity: 0.7 }}>→</span>
+                    </Link>
+                </div>
+
                 {/* Footer */}
                 <p style={{
                     textAlign: 'center',
@@ -552,7 +603,7 @@ const Login = () => {
                     color: '#6B7280',
                     fontSize: '0.8rem'
                 }}>
-                    By continuing, you agree to our Terms & Privacy Policy
+                    By continuing, you agree to our Terms &amp; Privacy Policy
                 </p>
             </div>
 
@@ -560,6 +611,10 @@ const Login = () => {
             <style>{`
                 @keyframes spin {
                     to { transform: rotate(360deg); }
+                }
+                @keyframes pulseGlow {
+                    0%, 100% { opacity: 0.35; }
+                    50% { opacity: 0.65; }
                 }
             `}</style>
         </div>
