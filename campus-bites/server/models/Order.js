@@ -11,6 +11,8 @@ const OrderSchema = new mongoose.Schema({
     status: { type: String, enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled'], default: 'pending' },
     paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
     orderType: { type: String, default: 'pickup' },
+    deliveryType: { type: String, enum: ['pickup', 'cabin'], default: 'pickup' },
+    cabinNumber: { type: String, default: '' },
     pickupTime: { type: String },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },

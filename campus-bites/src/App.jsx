@@ -17,6 +17,8 @@ import ManageMenu from './pages/admin/ManageMenu'
 import Analytics from './pages/admin/Analytics'
 import KitchenView from './pages/staff/KitchenView'
 import ForgotPassword from './pages/ForgotPassword'
+import LecturerLogin from './pages/lecturer/LecturerLogin'
+import LecturerPortal from './pages/lecturer/LecturerPortal'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles }) => {
@@ -29,9 +31,9 @@ const ProtectedRoute = ({ children, roles }) => {
     }
 
     if (roles && !roles.includes(user.role)) {
-        // Redirect based on role if they try to access unauthorized pages
         if (user.role === 'admin') return <Navigate to="/admin/menu" replace />;
         if (user.role === 'staff') return <Navigate to="/staff/kitchen" replace />;
+        if (user.role === 'lecturer') return <Navigate to="/lecturer/menu" replace />;
         return <Navigate to="/dashboard" replace />;
     }
 
@@ -88,6 +90,14 @@ function App() {
                             <Route path="kitchen" element={<KitchenView />} />
                             <Route index element={<Navigate to="kitchen" replace />} />
                         </Route>
+
+                        {/* Lecturer Portal */}
+                        <Route path="/lecturer" element={<LecturerLogin />} />
+                        <Route path="/lecturer/menu" element={
+                            <ProtectedRoute roles={['lecturer']}>
+                                <LecturerPortal />
+                            </ProtectedRoute>
+                        } />
 
                     </Routes>
                 </Router>

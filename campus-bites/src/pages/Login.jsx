@@ -23,6 +23,7 @@ const Login = () => {
         if (user) {
             if (user.role === 'admin') navigate('/admin/menu');
             else if (user.role === 'staff') navigate('/staff/kitchen');
+            else if (user.role === 'lecturer') navigate('/lecturer/menu');
             else navigate('/dashboard/menu');
         }
     }, [user, navigate]);

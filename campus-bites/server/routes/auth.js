@@ -221,4 +221,67 @@ router.post('/google', async (req, res) => {
     }
 });
 
+// Lecturer Register
+router.post('/lecturer/register', async (req, res) => {
+    try {
+        const { name, email, password, cabinNumber, department } = req.body;
+
+        if (!cabinNumber) {
+            return res.status(400).json({ message: 'Cabin number is required for lecturer registration' });
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists with this email' });
+        }
+
+        const user = new User({
+            name,
+            email,
+            password,
+            role: 'lecturer',
+            cabinNumber,
+            department: department || '',
+            isVerified: true
+        });
+        await user.save();
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+        res.status(201).json({
+            message: 'Lecturer account created successfully',
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, cabinNumber: user.cabinNumber, department: user.department },
+            token
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+});
+
+// Lecturer Login
+router.post('/lecturer/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        const user = await User.findOne({ email, role: 'lecturer' });
+        if (!user) {
+            return res.status(400).json({ message: 'No lecturer account found with this email' });
+        }
+
+        if (user.password !== password) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({
+            message: 'Lecturer login successful',
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, cabinNumber: user.cabinNumber, department: user.department },
+            token
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+});
+
 module.exports = router;
