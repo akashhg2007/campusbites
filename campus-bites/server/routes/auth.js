@@ -224,7 +224,7 @@ router.post('/google', async (req, res) => {
 // Lecturer Register
 router.post('/lecturer/register', async (req, res) => {
     try {
-        const { name, email, password, cabinNumber, department } = req.body;
+        const { name, email, password, cabinNumber, department, phone } = req.body;
 
         if (!cabinNumber) {
             return res.status(400).json({ message: 'Cabin number is required for lecturer registration' });
@@ -236,13 +236,9 @@ router.post('/lecturer/register', async (req, res) => {
         }
 
         const user = new User({
-            name,
-            email,
-            password,
-            role: 'lecturer',
-            cabinNumber,
-            department: department || '',
-            isVerified: true
+            name, email, password, role: 'lecturer',
+            cabinNumber, department: department || '',
+            phone: phone || '', isVerified: true
         });
         await user.save();
 
@@ -250,7 +246,7 @@ router.post('/lecturer/register', async (req, res) => {
 
         res.status(201).json({
             message: 'Lecturer account created successfully',
-            user: { id: user._id, name: user.name, email: user.email, role: user.role, cabinNumber: user.cabinNumber, department: user.department },
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, cabinNumber: user.cabinNumber, department: user.department, phone: user.phone },
             token
         });
     } catch (err) {
@@ -276,7 +272,7 @@ router.post('/lecturer/login', async (req, res) => {
 
         res.json({
             message: 'Lecturer login successful',
-            user: { id: user._id, name: user.name, email: user.email, role: user.role, cabinNumber: user.cabinNumber, department: user.department },
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, cabinNumber: user.cabinNumber, department: user.department, phone: user.phone },
             token
         });
     } catch (err) {

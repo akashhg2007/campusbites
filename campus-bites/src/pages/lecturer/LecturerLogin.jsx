@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { UtensilsCrossed, Mail, Lock, ArrowRight, User, Hash, BookOpen } from 'lucide-react';
+import { UtensilsCrossed, Mail, Lock, ArrowRight, User, Hash, BookOpen, Phone } from 'lucide-react';
 import API_URL from '../../apiConfig';
 
 const LecturerLogin = () => {
     const [mode, setMode] = useState('login');
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', cabinNumber: '', department: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', cabinNumber: '', department: '', phone: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const { login } = useAuth();
@@ -121,6 +121,10 @@ const LecturerLogin = () => {
                                 <div className="animate-item delay-4" style={{ position: 'relative' }}>
                                     <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }}><Hash size={18} /></span>
                                     <input className="lec-input" name="cabinNumber" placeholder="Cabin Number (e.g. C-204)" value={formData.cabinNumber} onChange={handleChange} required />
+                                </div>
+                                <div className="animate-item delay-5" style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }}><Phone size={18} /></span>
+                                    <input className="lec-input" name="phone" type="tel" placeholder="Phone Number (optional)" value={formData.phone} onChange={handleChange} />
                                 </div>
                                 <div className="animate-item delay-5" style={{ position: 'relative' }}>
                                     <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }}><BookOpen size={18} /></span>

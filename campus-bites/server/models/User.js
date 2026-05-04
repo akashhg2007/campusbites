@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
     role: { type: String, enum: ['student', 'admin', 'staff', 'lecturer'], default: 'student' },
     cabinNumber: { type: String, default: '' },
     department: { type: String, default: '' },
+    phone: { type: String, default: '' },
     isVerified: { type: Boolean, default: false },
     otp: { type: String },
     otpExpires: { type: Date },
