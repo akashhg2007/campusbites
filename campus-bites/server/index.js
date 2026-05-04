@@ -92,6 +92,26 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 
+// Temporary Seed Route (Access via http://localhost:5000/api/seed)
+app.get('/api/seed', async (req, res) => {
+    try {
+        const User = require('./models/User');
+        const users = [
+            { name: 'Admin User', email: 'admin@bites.com', password: 'admin123', role: 'admin' },
+            { name: 'Staff User', email: 'staff@bites.com', password: 'staff123', role: 'staff' },
+            { name: 'Delivery Boy', email: 'delivery@bites.com', password: 'delivery123', role: 'delivery' },
+            { name: 'Student User', email: 'student@bites.com', password: 'student123', role: 'student' }
+        ];
+        for (const u of users) {
+            const exists = await User.findOne({ email: u.email });
+            if (!exists) await new User(u).save();
+        }
+        res.json({ message: 'Users seeded successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
