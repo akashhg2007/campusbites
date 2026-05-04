@@ -7,7 +7,7 @@ import API_URL from '../../apiConfig';
 const KitchenView = () => {
     const [orders, setOrders] = useState([]);
     const [filter, setFilter] = useState('All');
-    const { logout, user } = useAuth();
+    const { logout, user, token } = useAuth();
 
     const fetchOrders = async () => {
         if (!user?.id) {
@@ -16,7 +16,7 @@ const KitchenView = () => {
 
         try {
             const res = await fetch(`${API_URL}/api/orders/staff/active`, {
-                headers: { 'x-user-id': user.id }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
@@ -46,7 +46,7 @@ const KitchenView = () => {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-id': user.id
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ status: newStatus })
             });

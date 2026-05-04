@@ -8,7 +8,7 @@ const ManageMenu = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [loading, setLoading] = useState(false);
-    const { user } = useAuth();
+    const { user, token } = useAuth();
 
     // Form State
     const [formData, setFormData] = useState({
@@ -51,7 +51,7 @@ const ManageMenu = () => {
         try {
             const res = await fetch(`${API_URL}/api/products/${id}`, {
                 method: 'DELETE',
-                headers: { 'x-user-id': user.id }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.ok) {
@@ -82,7 +82,7 @@ const ManageMenu = () => {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-id': user.id
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(formData)
             });

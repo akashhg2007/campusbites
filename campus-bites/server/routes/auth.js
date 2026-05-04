@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -26,10 +27,12 @@ router.post('/register', async (req, res) => {
             role: 'student'
         });
         await user.save();
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         res.status(201).json({
             message: 'Registration successful',
             user: { id: user._id, name: user.name, email: user.email, role: user.role },
+            token,
             requiresVerification: false
         });
     } catch (err) {
@@ -65,10 +68,12 @@ router.post('/verify-otp', async (req, res) => {
         user.otp = undefined;
         user.otpExpires = undefined;
         await user.save();
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         res.json({
             message: 'Email verified successfully',
-            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
+            token
         });
 
     } catch (err) {
@@ -92,11 +97,9 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        // if (!user.isVerified) {
-        //     return res.status(403).json({ message: 'Please verify your email first', requiresVerification: true, userId: user._id });
-        // }
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-        res.json({ message: 'Login successful', user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+        res.json({ message: 'Login successful', user: { id: user._id, name: user.name, email: user.email, role: user.role }, token });
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
@@ -204,9 +207,12 @@ router.post('/google', async (req, res) => {
             }
         }
 
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
         res.json({
             message: 'Google login successful',
-            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
+            token
         });
 
     } catch (err) {

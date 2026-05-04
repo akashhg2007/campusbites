@@ -11,7 +11,7 @@ import API_URL from '../apiConfig';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const { addToCart } = useCart();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -26,7 +26,7 @@ const Orders = () => {
 
         try {
             const res = await fetch(`${API_URL}/api/orders/mine`, {
-                headers: { 'x-user-id': user.id }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();

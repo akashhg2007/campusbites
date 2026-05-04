@@ -9,7 +9,12 @@ const OrderSchema = new mongoose.Schema({
     }],
     totalAmount: { type: Number, required: true },
     status: { type: String, enum: ['pending', 'preparing', 'ready', 'completed', 'cancelled'], default: 'pending' },
+    paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+    orderType: { type: String, default: 'pickup' },
     pickupTime: { type: String },
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    razorpaySignature: { type: String },
     expiresAt: { type: Date } // For TIL deletion
 }, { timestamps: true });
 

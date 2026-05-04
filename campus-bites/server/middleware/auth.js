@@ -1,22 +1,25 @@
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 
-// Mock Authentication Middleware
-// In a real app, this would verify a JWT token from req.headers.authorization
+// JWT Authentication Middleware
 const verifyUser = async (req, res, next) => {
-  const userId = req.headers['x-user-id']; // Client sends user ID in header for this prototype
-  if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized: No user ID provided' });
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized: No token provided' });
   }
 
   try {
-    const user = await User.findById(userId);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized: User not found' });
     }
     req.user = user;
     next();
   } catch (err) {
-    res.status(500).json({ message: 'Server Error' });
+    res.status(401).json({ message: 'Unauthorized: Invalid token' });
   }
 };
 

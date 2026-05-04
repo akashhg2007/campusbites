@@ -79,4 +79,82 @@ router.put('/:id/status', verifyUser, checkRole(['admin', 'staff']), async (req,
     }
 });
 
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+let razorpay;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+} else {
+    console.warn('⚠️ WARNING: Razorpay keys are missing. Payment routes will not function properly.');
+}
+
+// Create Razorpay Order
+router.post('/razorpay', verifyUser, async (req, res) => {
+    if (!razorpay) {
+        return res.status(503).json({ message: 'Payment gateway not configured' });
+    }
+    try {
+        const { amount } = req.body;
+        const options = {
+            amount: Math.round(amount * 100), // amount in smallest currency unit (paise)
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        res.json({ ...order, key_id: process.env.RAZORPAY_KEY_ID });
+    } catch (err) {
+        console.error('Razorpay Error:', err);
+        res.status(500).json({ message: 'Error creating payment order', error: err.message });
+    }
+});
+
+// Verify Payment
+router.post('/verify', verifyUser, async (req, res) => {
+    if (!razorpay) {
+        return res.status(503).json({ message: 'Payment gateway not configured' });
+    }
+    try {
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            orderData
+        } = req.body;
+
+        const sign = razorpay_order_id + "|" + razorpay_payment_id;
+        const expectedSign = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+            .update(sign.toString())
+            .digest("hex");
+
+        if (razorpay_signature === expectedSign) {
+            // Payment verified, now save the order to DB
+            const order = new Order({
+                user: req.user._id,
+                items: orderData.items,
+                totalAmount: orderData.totalAmount,
+                pickupTime: orderData.pickupTime,
+                orderType: orderData.orderType || 'pickup',
+                paymentStatus: 'paid',
+                razorpayOrderId: razorpay_order_id,
+                razorpayPaymentId: razorpay_payment_id,
+                razorpaySignature: razorpay_signature
+            });
+
+            await order.save();
+            return res.status(200).json({ message: "Payment verified successfully", order });
+        } else {
+            return res.status(400).json({ message: "Invalid payment signature" });
+        }
+    } catch (err) {
+        console.error('Verification Error:', err);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
 module.exports = router;

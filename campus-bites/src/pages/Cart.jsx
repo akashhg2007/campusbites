@@ -8,7 +8,7 @@ import API_URL from '../apiConfig';
 
 const Cart = () => {
     const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const [pickupTime, setPickupTime] = useState('');
     const [isDonationChecked, setIsDonationChecked] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ const Cart = () => {
             return;
         }
 
-        if (!user?.id) {
+        if (!user || !token) {
             alert('Please log in to place an order');
             navigate('/');
             return;
@@ -39,25 +39,71 @@ const Cart = () => {
                 donation: donationAmount
             };
 
-            const res = await fetch(`${API_URL}/api/orders`, {
+            // 1. Create Razorpay Order on server
+            const razorpayRes = await fetch(`${API_URL}/api/orders/razorpay`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-id': user.id
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(orderData)
+                body: JSON.stringify({ amount: finalTotal })
             });
 
-            if (res.ok) {
-                clearCart();
-                // Custom vibration/success feedback could go here
-                alert('Order placed successfully!');
-                navigate('/dashboard/orders');
-            } else {
-                throw new Error('Failed to place order');
-            }
-        } catch (e) {
-            alert('Failed to place order');
+            const razorpayOrder = await razorpayRes.json();
+            if (!razorpayRes.ok) throw new Error(razorpayOrder.message || 'Payment init failed');
+
+            // 2. Open Razorpay Modal
+            const options = {
+                key: razorpayOrder.key_id,
+                amount: razorpayOrder.amount,
+                currency: razorpayOrder.currency,
+                name: "Campus Bites",
+                description: "Canteen Order Payment",
+                order_id: razorpayOrder.id,
+                handler: async function (response) {
+                    // 3. Verify Payment on server
+                    try {
+                        const verifyRes = await fetch(`${API_URL}/api/orders/verify`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                orderData
+                            })
+                        });
+
+                        if (verifyRes.ok) {
+                            clearCart();
+                            alert('Order placed successfully!');
+                            navigate('/dashboard/orders');
+                        } else {
+                            alert('Payment verification failed');
+                        }
+                    } catch (err) {
+                        console.error('Verification error:', err);
+                        alert('Error verifying payment');
+                    }
+                },
+                prefill: {
+                    name: user.name,
+                    email: user.email,
+                },
+                theme: {
+                    color: "#E23744"
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+
+        } catch (err) {
+            console.error('Checkout error:', err);
+            alert(err.message || 'Failed to process checkout');
         } finally {
             setLoading(false);
         }
