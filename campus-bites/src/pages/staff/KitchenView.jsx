@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, RefreshCw, Clock, ChefHat, CheckCircle2, Flame, Inbox, PackageCheck } from 'lucide-react';
+import { LogOut, RefreshCw, Clock, ChefHat, CheckCircle2, Flame, Inbox, PackageCheck, Phone, MapPin } from 'lucide-react';
 
 import API_URL from '../../apiConfig';
 
@@ -93,7 +93,50 @@ const KitchenView = () => {
             </div>
 
             <div style={{ marginBottom: '2rem', minHeight: '80px' }}>
-                <p style={{ fontSize: '0.75rem', color: '#9CA3AF', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 700 }}>Customer: {order.user?.name || 'Guest'}</p>
+                {/* Lecturer / Customer Details Block */}
+                {order.user && (
+                    <div style={{ 
+                        background: 'rgba(255,255,255,0.03)', 
+                        border: '1px solid rgba(255,255,255,0.06)', 
+                        borderRadius: '12px', 
+                        padding: '12px', 
+                        marginBottom: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '1rem' }}>👤</span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>{order.user.name}</span>
+                            {order.user.role === 'lecturer' && (
+                                <span style={{ background: 'rgba(124,58,237,0.2)', color: '#a78bfa', fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 800, textTransform: 'uppercase' }}>Lecturer</span>
+                            )}
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+                            {order.user.phone && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Phone size={14} color="#10B981" />
+                                    <a href={`tel:${order.user.phone}`} style={{ fontSize: '0.85rem', color: '#10B981', textDecoration: 'none', fontWeight: 600 }}>{order.user.phone}</a>
+                                </div>
+                            )}
+                            {order.user.cabinNumber && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '0.9rem' }}>🚪</span>
+                                    <span style={{ fontSize: '0.85rem', color: '#a78bfa', fontWeight: 700 }}>Cabin {order.user.cabinNumber}</span>
+                                </div>
+                            )}
+                            {order.user.department && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '0.9rem' }}>🏫</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>{order.user.department}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <p style={{ fontSize: '0.7rem', color: '#6B7280', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Order Items:</p>
                 {order.items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '0.75rem' }}>
                         {/* Veg/Non-Veg Badge */}
