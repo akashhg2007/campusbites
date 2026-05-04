@@ -158,3 +158,33 @@ router.post('/verify', verifyUser, async (req, res) => {
 });
 
 module.exports = router;
+
+// ─── Delivery Boy: Active delivery orders (ready for delivery) ───────────────
+const authMid = require('../middleware/auth');
+
+router.get('/delivery/active', authMid.verifyUser, authMid.checkRole(['delivery', 'admin', 'staff']), async (req, res) => {
+    try {
+        const orders = await Order.find({ status: { $in: ['ready', 'preparing', 'pending'] } })
+            .populate('items.product', 'name price image category')
+            .populate('user', 'name email phone cabinNumber department')
+            .sort({ createdAt: 1 }); // oldest first (FIFO delivery)
+        res.json(orders);
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching delivery orders', error: err.message });
+    }
+});
+
+// Delivery boy marks order as delivered (completed)
+router.put('/delivery/:id/complete', authMid.verifyUser, authMid.checkRole(['delivery', 'admin', 'staff']), async (req, res) => {
+    try {
+        const order = await Order.findByIdAndUpdate(
+            req.params.id,
+            { $set: { status: 'completed', expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } },
+            { new: true }
+        );
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        res.json({ message: 'Order marked as delivered', order });
+    } catch (err) {
+        res.status(500).json({ message: 'Error completing order', error: err.message });
+    }
+});

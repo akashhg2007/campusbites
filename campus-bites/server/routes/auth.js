@@ -279,5 +279,32 @@ router.post('/lecturer/login', async (req, res) => {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
+});
+
+// ─── Delivery Boy Register ───────────────────────────────────────────────────
+router.post('/delivery/register', async (req, res) => {
+    try {
+        const { name, email, password, phone } = req.body;
+        if (!name || !email || !password) return res.status(400).json({ message: 'Name, email and password are required' });
+        const existing = await User.findOne({ email });
+        if (existing) return res.status(400).json({ message: 'Email already registered' });
+        const user = new User({ name, email, password, phone: phone || '', role: 'delivery', isVerified: true });
+        await user.save();
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        res.status(201).json({ message: 'Delivery account created', user: { id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone }, token });
+    } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
+});
+
+// ─── Delivery Boy Login ──────────────────────────────────────────────────────
+router.post('/delivery/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email, role: 'delivery' });
+        if (!user) return res.status(400).json({ message: 'No delivery account found with this email' });
+        if (user.password !== password) return res.status(400).json({ message: 'Invalid credentials' });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        res.json({ message: 'Login successful', user: { id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone }, token });
+    } catch (err) { res.status(500).json({ message: 'Server error', error: err.message }); }
+});
 
 module.exports = router;

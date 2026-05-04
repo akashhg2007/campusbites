@@ -19,6 +19,8 @@ import KitchenView from './pages/staff/KitchenView'
 import ForgotPassword from './pages/ForgotPassword'
 import LecturerLogin from './pages/lecturer/LecturerLogin'
 import LecturerPortal from './pages/lecturer/LecturerPortal'
+import DeliveryLogin from './pages/delivery/DeliveryLogin'
+import DeliveryPortal from './pages/delivery/DeliveryPortal'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles }) => {
@@ -34,6 +36,7 @@ const ProtectedRoute = ({ children, roles }) => {
         if (user.role === 'admin') return <Navigate to="/admin/menu" replace />;
         if (user.role === 'staff') return <Navigate to="/staff/kitchen" replace />;
         if (user.role === 'lecturer') return <Navigate to="/lecturer/menu" replace />;
+        if (user.role === 'delivery') return <Navigate to="/delivery/orders" replace />;
         return <Navigate to="/dashboard" replace />;
     }
 
@@ -91,11 +94,19 @@ function App() {
                             <Route index element={<Navigate to="kitchen" replace />} />
                         </Route>
 
-                        {/* Lecturer Portal — same UI as student, routed separately */}
+                        {/* Lecturer Portal */}
                         <Route path="/lecturer" element={<LecturerLogin />} />
                         <Route path="/lecturer/menu" element={
                             <ProtectedRoute roles={['lecturer']}>
                                 <Navigate to="/dashboard/menu" replace />
+                            </ProtectedRoute>
+                        } />
+
+                        {/* Delivery Boy Portal */}
+                        <Route path="/delivery" element={<DeliveryLogin />} />
+                        <Route path="/delivery/orders" element={
+                            <ProtectedRoute roles={['delivery', 'admin', 'staff']}>
+                                <DeliveryPortal />
                             </ProtectedRoute>
                         } />
 
