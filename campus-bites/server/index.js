@@ -9,9 +9,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: false // Allow cross-origin requests
+}));
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function(origin, callback) {
+        // Allow all origins if FRONTEND_URL not set (development/migration period)
+        const allowedOrigin = process.env.FRONTEND_URL;
+        if (!allowedOrigin || !origin || origin === allowedOrigin) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Temporarily allow all to avoid breaking changes
+        }
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
