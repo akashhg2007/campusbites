@@ -11,6 +11,7 @@ const seedUsers = async () => {
         const users = [
             { name: 'Admin User', email: 'admin@bites.com', password: 'admin123', role: 'admin' },
             { name: 'Staff User', email: 'staff@bites.com', password: 'staff123', role: 'staff' },
+            { name: 'Delivery Boy', email: 'delivery@bites.com', password: 'delivery123', role: 'delivery' },
             { name: 'Student User', email: 'student@bites.com', password: 'student123', role: 'student' }
         ];
 

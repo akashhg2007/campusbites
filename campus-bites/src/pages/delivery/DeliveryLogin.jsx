@@ -6,7 +6,12 @@ import API_URL from '../../apiConfig';
 
 const DeliveryLogin = () => {
     const [mode, setMode] = useState('login');
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' });
+    const [formData, setFormData] = useState({ 
+        name: '', 
+        email: 'delivery@bites.com', 
+        password: 'delivery123', 
+        phone: '' 
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const { login } = useAuth();
@@ -104,6 +109,11 @@ const DeliveryLogin = () => {
                             <div className="ai d4" style={{ position: 'relative' }}>
                                 <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }}><Phone size={18} /></span>
                                 <input className="del-input" name="phone" type="tel" placeholder="Phone Number" value={formData.phone} onChange={handleChange} />
+                            </div>
+                        )}
+                        {mode === 'login' && (
+                            <div className="ai d4" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '0.75rem', padding: '0.7rem 1rem', fontSize: '0.8rem', color: '#FDE68A', marginBottom: '0.5rem' }}>
+                                💡 Default: <b>delivery@bites.com</b> / <b>delivery123</b>
                             </div>
                         )}
                         <button className="del-btn ai d4" type="submit" disabled={loading}>
