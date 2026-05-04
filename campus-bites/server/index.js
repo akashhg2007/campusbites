@@ -64,7 +64,29 @@ mongoose.connect(mongoURI, {
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
 })
-    .then(() => console.log('MongoDB Connected Successfully'))
+    .then(async () => {
+        console.log('MongoDB Connected Successfully');
+        
+        // Auto-seed default users on startup
+        try {
+            const User = require('./models/User');
+            const users = [
+                { name: 'Admin User', email: 'admin@bites.com', password: 'admin123', role: 'admin' },
+                { name: 'Staff User', email: 'staff@bites.com', password: 'staff123', role: 'staff' },
+                { name: 'Delivery Boy', email: 'delivery@bites.com', password: 'delivery123', role: 'delivery' },
+                { name: 'Student User', email: 'student@bites.com', password: 'student123', role: 'student' }
+            ];
+            for (const u of users) {
+                const exists = await User.findOne({ email: u.email });
+                if (!exists) {
+                    await new User(u).save();
+                    console.log(`Auto-seeded ${u.role} user: ${u.email}`);
+                }
+            }
+        } catch (err) {
+            console.error('Auto-seeding failed:', err.message);
+        }
+    })
     .catch(err => {
         console.error('MongoDB Connection Error Details:');
         console.error('Name:', err.name);
