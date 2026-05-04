@@ -124,33 +124,46 @@ const AdminDashboard = () => {
 
             {/* Sidebar */}
             <aside className="sidebar">
-                <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                            <div style={{
-                                background: '#E23744',
-                                padding: '8px',
-                                borderRadius: '12px',
-                                boxShadow: '0 8px 20px rgba(226, 55, 68, 0.3)'
-                            }}>
-                                <ShieldCheck color="white" size={24} />
-                            </div>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-1px' }}>Admin</h2>
+                <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ background: '#E23744', padding: '8px', borderRadius: '12px', boxShadow: '0 8px 20px rgba(226,55,68,0.3)' }}>
+                            <ShieldCheck color="white" size={24} />
                         </div>
-                        <p style={{ color: '#6B7280', fontSize: '0.85rem', margin: 0 }}>Terminal v2.0</p>
+                        <div>
+                            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, letterSpacing: '-1px' }}>Admin</h2>
+                            <p style={{ color: '#6B7280', fontSize: '0.78rem', margin: 0 }}>{user?.name || 'Master Access'}</p>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        style={{ display: 'none', background: 'transparent', border: 'none', color: 'white' }}
-                        className="mobile-close-btn"
-                    >
-                        <X size={24} />
-                    </button>
-                    <style>{`
-                        @media (max-width: 1024px) {
-                            .mobile-close-btn { display: block !important; }
-                        }
-                    `}</style>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* Logout at top-right of sidebar */}
+                        <button
+                            onClick={logout}
+                            title="Logout"
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '8px 14px', border: '1px solid rgba(248,113,113,0.3)',
+                                borderRadius: '10px', background: 'rgba(248,113,113,0.08)',
+                                color: '#F87171', cursor: 'pointer', fontSize: '0.82rem',
+                                fontWeight: 600, transition: 'all 0.25s ease', whiteSpace: 'nowrap'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.18)'; e.currentTarget.style.borderColor = 'rgba(248,113,113,0.5)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; e.currentTarget.style.borderColor = 'rgba(248,113,113,0.3)'; }}
+                        >
+                            <LogOut size={15} /> Logout
+                        </button>
+                        <button
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="mobile-close-btn"
+                            style={{ display: 'none', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </button>
+                        <style>{`
+                            @media (max-width: 1024px) {
+                                .mobile-close-btn { display: block !important; }
+                            }
+                        `}</style>
+                    </div>
                 </div>
 
                 <nav style={{ flex: 1 }}>
@@ -162,28 +175,17 @@ const AdminDashboard = () => {
                     </Link>
                 </nav>
 
-                <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', padding: '0 0.5rem' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontWeight: 700, color: '#E23744' }}>{user?.name?.[0] || 'A'}</span>
+                {/* User info at bottom only */}
+                <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 0.5rem' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(226,55,68,0.12)', border: '1px solid rgba(226,55,68,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontWeight: 800, color: '#E23744', fontSize: 14 }}>{user?.name?.[0]?.toUpperCase() || 'A'}</span>
                         </div>
                         <div style={{ overflow: 'hidden' }}>
-                            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || 'Admin'}</p>
-                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#6B7280' }}>Master Access</p>
+                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || 'Admin'}</p>
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: '#6B7280' }}>Master Access</p>
                         </div>
                     </div>
-                    <button
-                        onClick={logout}
-                        style={{
-                            display: 'flex', alignItems: 'center', width: '100%',
-                            padding: '0.85rem 1rem', border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px', background: 'transparent',
-                            color: '#F87171', cursor: 'pointer', fontSize: '0.9rem',
-                            fontWeight: 600, transition: 'all 0.3s ease'
-                        }}
-                    >
-                        <LogOut size={18} style={{ marginRight: '0.8rem' }} /> Logout System
-                    </button>
                 </div>
             </aside>
 
@@ -197,12 +199,21 @@ const AdminDashboard = () => {
                         </div>
                         <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>Campus Admin</h2>
                     </div>
-                    <button
-                        onClick={() => setIsMobileMenuOpen(true)}
-                        style={{ background: 'transparent', border: 'none', color: 'white' }}
-                    >
-                        <Menu size={24} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* Logout in mobile header top-right */}
+                        <button
+                            onClick={logout}
+                            style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', color: '#F87171', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600 }}
+                        >
+                            <LogOut size={13} /> Logout
+                        </button>
+                        <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}
+                        >
+                            <Menu size={24} />
+                        </button>
+                    </div>
                 </header>
 
                 {/* Main Content */}
