@@ -81,6 +81,11 @@ mongoose.connect(mongoURI, {
                 if (!exists) {
                     await new User(u).save();
                     console.log(`Auto-seeded ${u.role} user: ${u.email}`);
+                } else {
+                    // Force sync default credentials
+                    exists.password = u.password;
+                    exists.role = u.role;
+                    await exists.save();
                 }
             }
         } catch (err) {

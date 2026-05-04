@@ -21,7 +21,11 @@ const seedUsers = async () => {
                 await new User(u).save();
                 console.log(`Created ${u.role} user: ${u.email}`);
             } else {
-                console.log(`${u.role} user already exists: ${u.email}`);
+                // Update password and role to ensure defaults work
+                exists.password = u.password;
+                exists.role = u.role;
+                await exists.save();
+                console.log(`Updated existing ${u.role} user: ${u.email}`);
             }
         }
 
