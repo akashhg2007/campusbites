@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Home, ShoppingBag, Receipt, LogOut, Minus, Plus, Search } from 'lucide-react';
 import API_URL from '../../apiConfig';
 
 const LecturerPortal = () => {
@@ -10,42 +11,34 @@ const LecturerPortal = () => {
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
     const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [orderLoading, setOrderLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('All');
+    const [orderLoading, setOrderLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
 
     const categories = ['All', 'Snacks', 'Meals', 'Beverages', 'Desserts'];
-    const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+    const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+    const taxAmount = Math.round(cartTotal * 0.05);
+    const finalTotal = cartTotal + taxAmount;
 
     useEffect(() => {
-        fetch(`${API_URL}/api/products`)
-            .then(r => r.json()).then(setProducts).catch(() => {});
+        fetch(`${API_URL}/api/products`).then(r => r.json()).then(d => { if (Array.isArray(d)) setProducts(d); }).catch(() => {});
     }, []);
 
     useEffect(() => {
         if (tab === 'orders' && token) {
-            fetch(`${API_URL}/api/orders/mine`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            }).then(r => r.json()).then(data => {
-                if (Array.isArray(data)) setOrders(data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
-            }).catch(() => {});
+            fetch(`${API_URL}/api/orders/mine`, { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(r => r.json()).then(d => { if (Array.isArray(d)) setOrders(d.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))); }).catch(() => {});
         }
     }, [tab, token]);
 
-    const addToCart = (product) => {
-        setCart(prev => {
-            const exists = prev.find(i => i._id === product._id);
-            if (exists) return prev.map(i => i._id === product._id ? { ...i, qty: i.qty + 1 } : i);
-            return [...prev, { ...product, qty: 1 }];
-        });
-    };
+    const addToCart = (p) => setCart(prev => {
+        const ex = prev.find(i => i._id === p._id);
+        return ex ? prev.map(i => i._id === p._id ? { ...i, qty: i.qty + 1 } : i) : [...prev, { ...p, qty: 1 }];
+    });
 
-    const updateQty = (id, delta) => {
-        setCart(prev => prev.map(i => i._id === id ? { ...i, qty: Math.max(0, i.qty + delta) } : i).filter(i => i.qty > 0));
-    };
+    const updateQty = (id, d) => setCart(prev => prev.map(i => i._id === id ? { ...i, qty: Math.max(0, i.qty + d) } : i).filter(i => i.qty > 0));
 
     const placeOrder = async () => {
         if (!cart.length) return;
@@ -54,18 +47,14 @@ const LecturerPortal = () => {
             const res = await fetch(`${API_URL}/api/orders/razorpay`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ amount: cartTotal })
+                body: JSON.stringify({ amount: finalTotal })
             });
             const rzpOrder = await res.json();
             if (!res.ok) throw new Error(rzpOrder.message);
 
-            const options = {
-                key: rzpOrder.key_id,
-                amount: rzpOrder.amount,
-                currency: rzpOrder.currency,
-                name: 'Campus Bites',
-                description: `Cabin Delivery to ${user.cabinNumber}`,
-                order_id: rzpOrder.id,
+            new window.Razorpay({
+                key: rzpOrder.key_id, amount: rzpOrder.amount, currency: rzpOrder.currency,
+                name: 'Campus Bites', description: `Cabin ${user.cabinNumber} Delivery`, order_id: rzpOrder.id,
                 handler: async (response) => {
                     const verify = await fetch(`${API_URL}/api/orders/verify`, {
                         method: 'POST',
@@ -74,31 +63,16 @@ const LecturerPortal = () => {
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature,
-                            orderData: {
-                                items: cart.map(i => ({ product: i._id, quantity: i.qty, price: i.price })),
-                                totalAmount: cartTotal,
-                                deliveryType: 'cabin',
-                                cabinNumber: user.cabinNumber,
-                                pickupTime: 'Cabin Delivery'
-                            }
+                            orderData: { items: cart.map(i => ({ product: i._id, quantity: i.qty, price: i.price })), totalAmount: finalTotal, deliveryType: 'cabin', cabinNumber: user.cabinNumber, pickupTime: 'Cabin Delivery' }
                         })
                     });
-                    if (verify.ok) {
-                        setCart([]);
-                        setSuccessMsg(`✅ Order placed! Delivering to Cabin ${user.cabinNumber}`);
-                        setTab('orders');
-                        setTimeout(() => setSuccessMsg(''), 5000);
-                    }
+                    if (verify.ok) { setCart([]); setSuccessMsg(`✅ Order placed! Delivering to Cabin ${user.cabinNumber}`); setTab('orders'); setTimeout(() => setSuccessMsg(''), 5000); }
+                    else alert('Payment verification failed');
                 },
-                prefill: { name: user.name, email: user.email },
-                theme: { color: '#7c3aed' }
-            };
-            new window.Razorpay(options).open();
-        } catch (err) {
-            alert(err.message || 'Order failed');
-        } finally {
-            setOrderLoading(false);
-        }
+                prefill: { name: user.name, email: user.email }, theme: { color: '#E23744' }
+            }).open();
+        } catch (err) { alert(err.message || 'Checkout failed'); }
+        finally { setOrderLoading(false); }
     };
 
     const filtered = products.filter(p =>
@@ -107,122 +81,146 @@ const LecturerPortal = () => {
         p.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    const styles = {
-        page: { minHeight: '100vh', background: '#0f0c1e', fontFamily: "'Inter',sans-serif", color: 'white', paddingBottom: 80 },
-        header: { background: 'linear-gradient(135deg,rgba(124,58,237,0.4),rgba(30,27,75,0.95))', backdropFilter: 'blur(20px)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, zIndex: 100 },
-        badge: { background: '#7c3aed', borderRadius: '50%', width: 20, height: 20, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'absolute', top: -6, right: -6, color: 'white' },
-        card: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden', transition: 'transform 0.2s,box-shadow 0.2s' },
-        btn: (active) => ({ padding: '8px 16px', borderRadius: 20, border: 'none', cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontWeight: 500, fontSize: 13, background: active ? 'linear-gradient(135deg,#7c3aed,#a78bfa)' : 'rgba(255,255,255,0.07)', color: active ? 'white' : 'rgba(255,255,255,0.6)', transition: 'all 0.2s' }),
-        navBtn: (active) => ({ flex: 1, padding: '12px 0', border: 'none', background: 'transparent', color: active ? '#a78bfa' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 500, fontFamily: "'Inter',sans-serif", cursor: 'pointer', borderTop: `2px solid ${active ? '#a78bfa' : 'transparent'}`, transition: 'all 0.2s' }),
-    };
+    const statusColor = { pending: '#F59E0B', preparing: '#3B82F6', ready: '#10B981', completed: '#6B7280', cancelled: '#EF4444' };
 
     return (
-        <div style={styles.page}>
+        <div style={{ minHeight: '100vh', background: '#0D0D0D', color: 'white', paddingBottom: 100, fontFamily: "'Inter',sans-serif" }}>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+                * { box-sizing: border-box; }
+                @keyframes slideDown { from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)} }
+                @keyframes fadeIn { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+                @keyframes spin { to{transform:rotate(360deg)} }
+                .glass-panel { background:rgba(26,26,28,0.9);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08); }
+                .lec-card { background:rgba(26,26,28,0.8);border:1px solid rgba(255,255,255,0.06);border-radius:1rem;transition:all 0.2s ease;animation:fadeIn 0.4s ease both; }
+                .lec-card:hover { border-color:rgba(226,55,68,0.2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.4); }
+                .lec-search { width:100%;padding:0.85rem 1rem 0.85rem 2.8rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:0.85rem;color:white;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;transition:all 0.3s; }
+                .lec-search:focus { border-color:#E23744;background:rgba(226,55,68,0.05); }
+                .lec-search::placeholder { color:#6B7280; }
+                .cat-btn { padding:0.5rem 1.1rem;border-radius:2rem;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#9CA3AF;font-size:0.82rem;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;white-space:nowrap; }
+                .cat-btn.active { background:rgba(226,55,68,0.15);border-color:rgba(226,55,68,0.4);color:#E23744; }
+                .qty-btn { width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:16px; }
+                .add-btn { width:100%;padding:0.6rem;background:linear-gradient(135deg,#E23744,#DC2626);border:none;color:white;border-radius:0.6rem;cursor:pointer;font-size:0.8rem;font-weight:600;font-family:'Inter',sans-serif;transition:all 0.2s; }
+                .add-btn:hover { transform:translateY(-1px);box-shadow:0 4px 15px rgba(226,55,68,0.3); }
+                .checkout-btn { width:100%;padding:1rem;background:linear-gradient(135deg,#E23744,#DC2626);border:none;color:white;border-radius:1rem;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 10px 30px rgba(226,55,68,0.3);display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.3s; }
+                .checkout-btn:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 15px 40px rgba(226,55,68,0.4); }
+                .checkout-btn:disabled { opacity:0.7;cursor:not-allowed; }
+                .nav-item { flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;border:none;background:transparent;cursor:pointer;color:#9CA3AF;font-size:10px;font-family:'Inter',sans-serif;font-weight:500;transition:all 0.3s; }
+                .nav-item.active { color:#E23744; }
+            `}</style>
+
             {/* Header */}
-            <div style={styles.header}>
+            <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: 17, color: 'white' }}>🎓 Lecturer Portal</div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                        {user?.name} · Cabin <span style={{ color: '#a78bfa', fontWeight: 600 }}>{user?.cabinNumber}</span>
+                    <div style={{ fontWeight: 800, fontSize: 18, background: 'linear-gradient(135deg,#E23744,#F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Campus Bites</div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginTop: 1 }}>
+                        {user?.name} · Cabin <span style={{ color: '#E23744', fontWeight: 700 }}>{user?.cabinNumber}</span>
+                        {user?.department ? ` · ${user.department}` : ''}
                     </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setTab('cart')}>
-                        <span style={{ fontSize: 22 }}>🛒</span>
-                        {cartCount > 0 && <span style={styles.badge}>{cartCount}</span>}
-                    </div>
-                    <button onClick={() => { logout(); navigate('/lecturer'); }} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', color: 'rgba(255,255,255,0.6)', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
-                        Sign Out
-                    </button>
-                </div>
+                <button onClick={() => { logout(); navigate('/lecturer'); }} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#9CA3AF', padding: '7px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, fontFamily: "'Inter',sans-serif" }}>
+                    <LogOut size={14} /> Sign Out
+                </button>
             </div>
 
-            {successMsg && (
-                <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', margin: '12px 16px', borderRadius: 12, padding: '12px 16px', color: '#86efac', fontSize: 14 }}>
-                    {successMsg}
-                </div>
-            )}
+            <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px' }}>
 
-            <div style={{ padding: '16px', maxWidth: 700, margin: '0 auto' }}>
+                {successMsg && (
+                    <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '0.85rem', padding: '12px 16px', color: '#86EFAC', fontSize: 14, marginBottom: 16, animation: 'slideDown 0.3s ease' }}>
+                        {successMsg}
+                    </div>
+                )}
 
-                {/* MENU TAB */}
+                {/* MENU */}
                 {tab === 'menu' && (
                     <div>
-                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search food..." style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 16px', color: 'white', fontSize: 14, outline: 'none', marginBottom: 14 }} />
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                            {categories.map(c => <button key={c} style={styles.btn(category === c)} onClick={() => setCategory(c)}>{c}</button>)}
+                        <div style={{ position: 'relative', marginBottom: 12 }}>
+                            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#6B7280' }} />
+                            <input className="lec-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search food..." />
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 14 }}>
-                            {filtered.map(p => {
+                        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 16 }}>
+                            {categories.map(c => <button key={c} className={`cat-btn ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>{c}</button>)}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                            {filtered.map((p, idx) => {
                                 const inCart = cart.find(i => i._id === p._id);
                                 return (
-                                    <div key={p._id} style={{ ...styles.card, cursor: 'pointer' }}>
+                                    <div key={p._id} className="lec-card" style={{ animationDelay: `${idx * 0.05}s` }}>
                                         <div style={{ position: 'relative' }}>
-                                            <img src={p.image || 'https://via.placeholder.com/200x130?text=Food'} alt={p.name} style={{ width: '100%', height: 110, objectFit: 'cover' }} />
-                                            <span style={{ position: 'absolute', top: 8, left: 8, background: p.isVeg ? '#16a34a' : '#dc2626', borderRadius: 4, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'white', fontWeight: 700 }}>{p.isVeg ? '●' : '●'}</span>
+                                            <img src={p.image || 'https://via.placeholder.com/200x120?text=Food'} alt={p.name} style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: '1rem 1rem 0 0' }} />
+                                            <span style={{ position: 'absolute', top: 8, left: 8, background: p.isVeg ? '#16A34A' : '#DC2626', borderRadius: 4, width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <span style={{ width: 6, height: 6, background: 'white', borderRadius: '50%', display: 'block' }} />
+                                            </span>
                                         </div>
-                                        <div style={{ padding: '10px 12px' }}>
-                                            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{p.name}</div>
-                                            <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: 14, marginBottom: 10 }}>₹{p.price}</div>
+                                        <div style={{ padding: '10px 12px 12px' }}>
+                                            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2, lineHeight: 1.3 }}>{p.name}</div>
+                                            <div style={{ color: '#E23744', fontWeight: 700, fontSize: 14, marginBottom: 10 }}>₹{p.price}</div>
                                             {inCart ? (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <button onClick={() => updateQty(p._id, -1)} style={{ background: '#7c3aed', border: 'none', color: 'white', width: 26, height: 26, borderRadius: 6, cursor: 'pointer', fontSize: 16 }}>−</button>
-                                                    <span style={{ fontWeight: 600, fontSize: 14 }}>{inCart.qty}</span>
-                                                    <button onClick={() => updateQty(p._id, 1)} style={{ background: '#7c3aed', border: 'none', color: 'white', width: 26, height: 26, borderRadius: 6, cursor: 'pointer', fontSize: 16 }}>+</button>
+                                                    <button className="qty-btn" onClick={() => updateQty(p._id, -1)} style={{ background: 'rgba(226,55,68,0.15)', color: '#E23744' }}><Minus size={14} /></button>
+                                                    <span style={{ fontWeight: 700, flex: 1, textAlign: 'center' }}>{inCart.qty}</span>
+                                                    <button className="qty-btn" onClick={() => updateQty(p._id, 1)} style={{ background: '#E23744', color: 'white' }}><Plus size={14} /></button>
                                                 </div>
                                             ) : (
-                                                <button onClick={() => addToCart(p)} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', border: 'none', color: 'white', padding: '7px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Add</button>
+                                                <button className="add-btn" onClick={() => addToCart(p)}>Add +</button>
                                             )}
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        {filtered.length === 0 && <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', marginTop: 40, fontSize: 15 }}>No items found</p>}
+                        {filtered.length === 0 && <p style={{ textAlign: 'center', color: '#6B7280', marginTop: 60, fontSize: 15 }}>No items found</p>}
                     </div>
                 )}
 
-                {/* CART TAB */}
+                {/* CART */}
                 {tab === 'cart' && (
                     <div>
-                        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Your Cart</h2>
+                        <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 16 }}>Your Cart</h2>
                         {cart.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
-                                <div style={{ fontSize: 48, marginBottom: 12 }}>🛒</div>
-                                <p>Cart is empty</p>
-                                <button onClick={() => setTab('menu')} style={{ marginTop: 16, background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', border: 'none', color: 'white', padding: '10px 24px', borderRadius: 10, cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontWeight: 600 }}>Browse Menu</button>
+                            <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280' }}>
+                                <ShoppingBag size={48} style={{ marginBottom: 16, opacity: 0.3 }} />
+                                <p style={{ fontSize: 16, marginBottom: 16 }}>Your cart is empty</p>
+                                <button onClick={() => setTab('menu')} style={{ background: 'linear-gradient(135deg,#E23744,#DC2626)', border: 'none', color: 'white', padding: '10px 24px', borderRadius: 10, cursor: 'pointer', fontFamily: "'Inter',sans-serif", fontWeight: 600 }}>Browse Menu</button>
                             </div>
                         ) : (
                             <>
-                                <div style={{ ...styles.card, padding: '14px 16px', marginBottom: 14, background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)' }}>
-                                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>🚪 Delivery to</div>
-                                    <div style={{ fontWeight: 700, fontSize: 16, color: '#a78bfa' }}>Cabin {user?.cabinNumber}</div>
-                                    {user?.department && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{user?.department}</div>}
+                                {/* Cabin Info */}
+                                <div className="lec-card" style={{ padding: '14px 16px', marginBottom: 16, background: 'rgba(226,55,68,0.07)', borderColor: 'rgba(226,55,68,0.2)' }}>
+                                    <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>🚪 Delivering to</div>
+                                    <div style={{ fontWeight: 700, fontSize: 17, color: '#E23744' }}>Cabin {user?.cabinNumber}</div>
+                                    {user?.department && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{user.department}</div>}
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
                                     {cart.map(item => (
-                                        <div key={item._id} style={{ ...styles.card, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <img src={item.image || 'https://via.placeholder.com/50?text=F'} alt={item.name} style={{ width: 50, height: 50, borderRadius: 10, objectFit: 'cover' }} />
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontWeight: 600, fontSize: 14 }}>{item.name}</div>
-                                                <div style={{ color: '#a78bfa', fontSize: 13, fontWeight: 600 }}>₹{item.price}</div>
+                                        <div key={item._id} className="lec-card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <img src={item.image || 'https://via.placeholder.com/50?text=F'} alt={item.name} style={{ width: 52, height: 52, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                                                <div style={{ color: '#E23744', fontWeight: 700, fontSize: 13 }}>₹{item.price}</div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <button onClick={() => updateQty(item._id, -1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', fontSize: 16 }}>−</button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                                <button className="qty-btn" onClick={() => updateQty(item._id, -1)} style={{ background: 'rgba(255,255,255,0.07)', color: 'white' }}><Minus size={14} /></button>
                                                 <span style={{ fontWeight: 700, width: 20, textAlign: 'center' }}>{item.qty}</span>
-                                                <button onClick={() => updateQty(item._id, 1)} style={{ background: '#7c3aed', border: 'none', color: 'white', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', fontSize: 16 }}>+</button>
+                                                <button className="qty-btn" onClick={() => updateQty(item._id, 1)} style={{ background: '#E23744', color: 'white' }}><Plus size={14} /></button>
                                             </div>
-                                            <div style={{ fontWeight: 700, fontSize: 14, minWidth: 50, textAlign: 'right' }}>₹{item.price * item.qty}</div>
+                                            <div style={{ fontWeight: 700, fontSize: 14, color: 'white', minWidth: 48, textAlign: 'right', flexShrink: 0 }}>₹{item.price * item.qty}</div>
                                         </div>
                                     ))}
                                 </div>
-                                <div style={{ ...styles.card, padding: 20 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.6)' }}>Total ({cartCount} items)</span>
-                                        <span style={{ fontWeight: 700, fontSize: 18, color: '#a78bfa' }}>₹{cartTotal}</span>
+                                <div className="lec-card" style={{ padding: 20 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, color: '#6B7280', fontSize: 14 }}>
+                                        <span>Subtotal ({cartCount} items)</span><span>₹{cartTotal}</span>
                                     </div>
-                                    <button onClick={placeOrder} disabled={orderLoading} style={{ width: '100%', background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', border: 'none', color: 'white', padding: '15px', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: "'Inter',sans-serif", opacity: orderLoading ? 0.7 : 1 }}>
-                                        {orderLoading ? '⏳ Processing...' : `🚪 Pay & Deliver to Cabin ${user?.cabinNumber}`}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, color: '#6B7280', fontSize: 14 }}>
+                                        <span>Tax (5%)</span><span>₹{taxAmount}</span>
+                                    </div>
+                                    <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, fontWeight: 700, fontSize: 17 }}>
+                                        <span>Total</span><span style={{ color: '#E23744' }}>₹{finalTotal}</span>
+                                    </div>
+                                    <button className="checkout-btn" onClick={placeOrder} disabled={orderLoading}>
+                                        {orderLoading ? <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span> : `🚪 Pay & Deliver to Cabin ${user?.cabinNumber}`}
                                     </button>
                                 </div>
                             </>
@@ -230,38 +228,28 @@ const LecturerPortal = () => {
                     </div>
                 )}
 
-                {/* ORDERS TAB */}
+                {/* ORDERS */}
                 {tab === 'orders' && (
                     <div>
-                        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>My Orders</h2>
+                        <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 16 }}>My Orders</h2>
                         {orders.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)' }}>
-                                <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
-                                <p>No orders yet</p>
+                            <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280' }}>
+                                <Receipt size={48} style={{ marginBottom: 16, opacity: 0.3 }} />
+                                <p style={{ fontSize: 16 }}>No orders yet</p>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                 {orders.map(order => {
-                                    const statusColor = { pending: '#f59e0b', preparing: '#3b82f6', ready: '#10b981', completed: '#6b7280', cancelled: '#ef4444' }[order.status] || '#6b7280';
+                                    const sc = statusColor[order.status] || '#6B7280';
                                     return (
-                                        <div key={order._id} style={{ ...styles.card, padding: 16 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-                                                    {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                                <span style={{ background: statusColor + '22', color: statusColor, padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, textTransform: 'capitalize', border: `1px solid ${statusColor}44` }}>
-                                                    {order.status}
-                                                </span>
+                                        <div key={order._id} className="lec-card" style={{ padding: 16 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                                                <div style={{ fontSize: 12, color: '#6B7280' }}>{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                                                <span style={{ background: sc + '22', color: sc, padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: `1px solid ${sc}44`, textTransform: 'capitalize' }}>{order.status}</span>
                                             </div>
-                                            {order.cabinNumber && (
-                                                <div style={{ color: '#a78bfa', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-                                                    🚪 Cabin Delivery · {order.cabinNumber}
-                                                </div>
-                                            )}
-                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 8 }}>
-                                                {order.items?.length} item{order.items?.length !== 1 ? 's' : ''}
-                                            </div>
-                                            <div style={{ fontWeight: 700, color: '#a78bfa', fontSize: 16 }}>₹{order.totalAmount}</div>
+                                            {order.cabinNumber && <div style={{ color: '#E23744', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>🚪 Cabin · {order.cabinNumber}</div>}
+                                            <div style={{ color: '#6B7280', fontSize: 13, marginBottom: 8 }}>{order.items?.length} item{order.items?.length !== 1 ? 's' : ''}</div>
+                                            <div style={{ fontWeight: 700, fontSize: 17, color: 'white' }}>₹{order.totalAmount}</div>
                                         </div>
                                     );
                                 })}
@@ -269,22 +257,32 @@ const LecturerPortal = () => {
                         )}
                     </div>
                 )}
-
             </div>
 
-            {/* Bottom Nav */}
-            <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(15,12,30,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', zIndex: 100 }}>
-                {[
-                    { key: 'menu', label: 'Menu', icon: '🍽️' },
-                    { key: 'cart', label: `Cart${cartCount > 0 ? ` (${cartCount})` : ''}`, icon: '🛒' },
-                    { key: 'orders', label: 'Orders', icon: '📦' },
-                ].map(item => (
-                    <button key={item.key} style={styles.navBtn(tab === item.key)} onClick={() => setTab(item.key)}>
-                        <div style={{ fontSize: 20, marginBottom: 2 }}>{item.icon}</div>
-                        <div>{item.label}</div>
-                    </button>
-                ))}
-            </div>
+            {/* Bottom Floating Dock Nav — same as student Dashboard */}
+            <nav style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: 400, zIndex: 1000 }}>
+                <div className="glass-panel" style={{ borderRadius: 24, padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+                    {[
+                        { key: 'menu', icon: Home, label: 'Menu' },
+                        { key: 'cart', icon: ShoppingBag, label: `Cart${cartCount > 0 ? ` (${cartCount})` : ''}`, badge: cartCount },
+                        { key: 'orders', icon: Receipt, label: 'Orders' },
+                    ].map(item => {
+                        const active = tab === item.key;
+                        const Icon = item.icon;
+                        return (
+                            <button key={item.key} className={`nav-item ${active ? 'active' : ''}`} onClick={() => setTab(item.key)}>
+                                <div style={{ position: 'relative', transform: active ? 'translateY(-4px)' : 'none', transition: 'transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275)' }}>
+                                    <Icon size={24} style={{ filter: active ? 'drop-shadow(0 0 8px rgba(226,55,68,0.5))' : 'none' }} />
+                                    {item.badge > 0 && (
+                                        <span style={{ position: 'absolute', top: -6, right: -6, background: '#E23744', color: 'white', fontSize: 10, fontWeight: 700, minWidth: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1C1C1E' }}>{item.badge}</span>
+                                    )}
+                                </div>
+                                <span style={{ fontSize: 10, opacity: active ? 1 : 0, transform: active ? 'translateY(0)' : 'translateY(10px)', transition: 'all 0.3s ease', position: 'absolute', bottom: -16, whiteSpace: 'nowrap' }}>{item.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </nav>
         </div>
     );
 };
