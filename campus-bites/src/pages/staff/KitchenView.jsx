@@ -191,6 +191,37 @@ const KitchenView = () => {
                                         </div>
                                     )}
 
+                                    {/* Customer / Lecturer Details */}
+                                    {order.user && (
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '10px 14px', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: '10px 20px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span style={{ fontSize: 13 }}>👤</span>
+                                                <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>{order.user.name}</span>
+                                                {order.user.role === 'lecturer' && (
+                                                    <span style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.3)', padding: '1px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>Lecturer</span>
+                                                )}
+                                            </div>
+                                            {order.user.phone && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <Phone size={13} color="#10B981" />
+                                                    <a href={`tel:${order.user.phone}`} style={{ fontSize: 13, fontWeight: 600, color: '#10B981', textDecoration: 'none' }}>{order.user.phone}</a>
+                                                </div>
+                                            )}
+                                            {order.user.cabinNumber && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span style={{ fontSize: 13 }}>🚪</span>
+                                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa' }}>Cabin {order.user.cabinNumber}</span>
+                                                </div>
+                                            )}
+                                            {order.user.department && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span style={{ fontSize: 13 }}>🏫</span>
+                                                    <span style={{ fontSize: 12, color: '#9CA3AF' }}>{order.user.department}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Items */}
                                     <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '10px 14px', marginBottom: 14 }}>
                                         {order.items?.map((item, i) => (

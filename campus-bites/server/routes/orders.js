@@ -49,7 +49,7 @@ router.get('/staff/active', verifyUser, checkRole(['admin', 'staff']), async (re
             status: { $ne: 'cancelled' }
         })
             .populate('items.product')
-            .populate('user', 'name')
+            .populate('user', 'name email phone cabinNumber department role')
             .sort({ createdAt: -1 }); // Newest first for easier history tracking
 
         res.json(orders);
