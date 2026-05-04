@@ -279,7 +279,6 @@ router.post('/lecturer/login', async (req, res) => {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
-});
 
 // ─── Delivery Boy Register ───────────────────────────────────────────────────
 router.post('/delivery/register', async (req, res) => {

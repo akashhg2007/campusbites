@@ -545,6 +545,21 @@ const Login = () => {
                     Create New Account
                 </Link>
 
+                {/* Delivery Boy Portal Button */}
+                <div style={{ marginTop: '1rem', position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: -1, background: 'linear-gradient(135deg,#F59E0B,#D97706,#F59E0B)', borderRadius: '1rem', filter: 'blur(6px)', opacity: 0.45, animation: 'pulseGlow 2.5s ease-in-out infinite' }} />
+                    <Link to="/delivery" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '1rem', background: 'linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.1))', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '1rem', color: '#FDE68A', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem', transition: 'all 0.3s ease', backdropFilter: 'blur(10px)' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,rgba(245,158,11,0.35),rgba(217,119,6,0.2))'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(245,158,11,0.3)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.1))'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                        <span style={{ fontSize: '1.2rem' }}>🚴</span>
+                        <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Delivery Portal</div>
+                            <div style={{ fontSize: '0.72rem', opacity: 0.7, fontWeight: 400 }}>Delivery boy order management</div>
+                        </div>
+                        <span style={{ marginLeft: 'auto', fontSize: '0.85rem', opacity: 0.7 }}>→</span>
+                    </Link>
+                </div>
+
                 {/* Lecturer Portal Button */}
                 <div style={{ marginTop: '1rem', position: 'relative' }}>
                     {/* Glow effect */}
@@ -591,21 +606,6 @@ const Login = () => {
                         <div style={{ textAlign: 'left' }}>
                             <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Lecturer Portal</div>
                             <div style={{ fontSize: '0.72rem', opacity: 0.7, fontWeight: 400 }}>Faculty cabin delivery ordering</div>
-                        </div>
-                        <span style={{ marginLeft: 'auto', fontSize: '0.85rem', opacity: 0.7 }}>→</span>
-                    </Link>
-                </div>
-
-                {/* Delivery Boy Portal Button */}
-                <div style={{ marginTop: '1rem', position: 'relative' }}>
-                    <div style={{ position: 'absolute', inset: -1, background: 'linear-gradient(135deg,#F59E0B,#D97706,#F59E0B)', borderRadius: '1rem', filter: 'blur(6px)', opacity: 0.45, animation: 'pulseGlow 2.5s ease-in-out infinite' }} />
-                    <Link to="/delivery" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '1rem', background: 'linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.1))', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '1rem', color: '#FDE68A', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem', transition: 'all 0.3s ease', backdropFilter: 'blur(10px)' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,rgba(245,158,11,0.35),rgba(217,119,6,0.2))'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(245,158,11,0.3)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.1))'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                        <span style={{ fontSize: '1.2rem' }}>🚴</span>
-                        <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Delivery Portal</div>
-                            <div style={{ fontSize: '0.72rem', opacity: 0.7, fontWeight: 400 }}>Delivery boy order management</div>
                         </div>
                         <span style={{ marginLeft: 'auto', fontSize: '0.85rem', opacity: 0.7 }}>→</span>
                     </Link>
