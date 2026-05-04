@@ -109,6 +109,12 @@ const Cart = () => {
         }
     };
 
+    // For lecturer: auto-set pickupTime to cabin delivery label
+    const isLecturer = user?.role === 'lecturer';
+    if (isLecturer && !pickupTime) {
+        setPickupTime(`Cabin ${user?.cabinNumber || 'Delivery'}`);
+    }
+
     const convert12to24 = (time12h) => {
         if (!time12h) return '';
         try {
@@ -408,13 +414,23 @@ const Cart = () => {
                 </div>
             </div>
 
-            {/* Pickup Time Selection */}
+            {/* Pickup Time / Cabin Delivery */}
             <div style={{ marginBottom: '2rem' }}>
+                {isLecturer ? (
+                    <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(226,55,68,0.25)', background: 'rgba(226,55,68,0.05)' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            🚪 Cabin Delivery
+                        </h3>
+                        <p style={{ color: '#9CA3AF', fontSize: '0.9rem', marginBottom: 8 }}>Your order will be delivered to:</p>
+                        <p style={{ color: '#E23744', fontWeight: 800, fontSize: '1.3rem' }}>Cabin {user?.cabinNumber}</p>
+                        {user?.department && <p style={{ color: '#6B7280', fontSize: '0.8rem', marginTop: 4 }}>{user.department}</p>}
+                    </div>
+                ) : (
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Clock size={16} color="#E23744" /> Select Pickup Time
-                </h3>
+                </h3>)}
 
-                <div className="glass-panel" style={{ padding: '2rem 1.5rem', borderRadius: '32px' }}>
+                {!isLecturer && <div className="glass-panel" style={{ padding: '2rem 1.5rem', borderRadius: '32px' }}>
                     {/* Visual Clock Display */}
                     <div className="clock-face" style={{
                         position: 'relative',
@@ -643,17 +659,8 @@ const Cart = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Info Text */}
-                    <p style={{
-                        fontSize: '0.75rem',
-                        color: '#6B7280',
-                        marginTop: '1rem',
-                        textAlign: 'center'
-                    }}>
-                        Pickup available during college hours: 07:00 AM - 07:00 PM
-                    </p>
-                </div>
+                {!isLecturer && <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '1rem', textAlign: 'center' }}>Pickup available during college hours: 07:00 AM - 07:00 PM</p>}
+                </div>}
             </div>
 
             {/* Checkout Button */}
@@ -678,7 +685,7 @@ const Cart = () => {
                     transition: 'transform 0.2s ease'
                 }}
             >
-                <span>{loading ? 'Processing...' : 'Place Order'}</span>
+                <span>{loading ? 'Processing...' : isLecturer ? `🚪 Deliver to Cabin ${user?.cabinNumber}` : 'Place Order'}</span>
                 <div style={{
                     background: 'rgba(255,255,255,0.2)',
                     borderRadius: '12px',

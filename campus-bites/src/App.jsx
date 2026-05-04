@@ -57,9 +57,9 @@ function App() {
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-                        {/* Student Dashboard */}
+                        {/* Student + Lecturer Dashboard — same exact UI */}
                         <Route path="/dashboard" element={
-                            <ProtectedRoute roles={['student']}>
+                            <ProtectedRoute roles={['student', 'lecturer']}>
                                 <Dashboard />
                             </ProtectedRoute>
                         }>
@@ -91,11 +91,11 @@ function App() {
                             <Route index element={<Navigate to="kitchen" replace />} />
                         </Route>
 
-                        {/* Lecturer Portal */}
+                        {/* Lecturer Portal — same UI as student, routed separately */}
                         <Route path="/lecturer" element={<LecturerLogin />} />
                         <Route path="/lecturer/menu" element={
                             <ProtectedRoute roles={['lecturer']}>
-                                <LecturerPortal />
+                                <Navigate to="/dashboard/menu" replace />
                             </ProtectedRoute>
                         } />
 

@@ -24,7 +24,7 @@ const LecturerLogin = () => {
             const body = mode === 'login' ? { email: formData.email, password: formData.password } : formData;
             const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             const data = await res.json();
-            if (res.ok) { login(data.user, data.token); navigate('/lecturer/menu'); }
+            if (res.ok) { login(data.user, data.token); navigate('/dashboard/menu'); }
             else setError(data.message || 'Authentication failed');
         } catch { setError('Server connection error. Please try again.'); }
         finally { setLoading(false); }
