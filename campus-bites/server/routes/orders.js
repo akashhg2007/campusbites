@@ -169,10 +169,10 @@ router.get('/delivery/active', authMid.verifyUser, authMid.checkRole(['delivery'
             .populate('user', 'name email phone cabinNumber department role')
             .sort({ createdAt: 1 }); // oldest first (FIFO delivery)
         
-        // Only show orders for lecturers (those requiring cabin delivery)
-        const lecturerOrders = orders.filter(order => order.user && order.user.role === 'lecturer');
+        // Only show orders that require cabin delivery
+        const deliveryOrders = orders.filter(order => order.deliveryType === 'cabin' || (order.cabinNumber && order.cabinNumber.trim() !== ''));
         
-        res.json(lecturerOrders);
+        res.json(deliveryOrders);
     } catch (err) {
         res.status(500).json({ message: 'Error fetching delivery orders', error: err.message });
     }
