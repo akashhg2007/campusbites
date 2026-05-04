@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import API_URL from '../apiConfig';
+import { useAuth } from '../../context/AuthContext';
+import API_URL from '../../apiConfig';
 
 const LecturerLogin = () => {
     const [mode, setMode] = useState('login'); // 'login' | 'register'
