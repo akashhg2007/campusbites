@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Search, Filter, Image as ImageIcon, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import API_URL from '../../apiConfig';
 import CSVUpload from '../../components/CSVUpload';

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Clock, CheckCircle, Package, ChefHat, RefreshCw,
     Calendar, ShoppingBag, Utensils

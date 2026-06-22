@@ -20,7 +20,7 @@ export const LevelBadge = ({ totalOrders = 0, size = 'normal' }) => {
     const level = getLevel(totalOrders);
     const nextLevel = LEVELS[level.index + 1];
     const progress = nextLevel
-        ? ((totalOrders - level.min) / (nextLevel.level - level.min)) * 100
+        ? ((totalOrders - level.min) / (nextLevel.min - level.min)) * 100
         : 100;
 
     if (size === 'small') {

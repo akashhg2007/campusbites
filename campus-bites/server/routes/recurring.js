@@ -1,7 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const Order = require('../models/Order');
-const User = require('../models/User');
 const { verifyUser } = require('../middleware/auth');
 
 const recurringOrders = new Map();

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, RefreshCw, Clock, Bike, CheckCircle2, Package, Inbox, MapPin, Phone } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { LogOut, RefreshCw, Clock, Bike, CheckCircle2, Package, MapPin, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket, emitSocket } from '../../hooks/useSocket';
 import { notify } from '../../components/Toast';
@@ -240,7 +240,7 @@ const DeliveryPortal = () => {
                     font-size: 0.95rem;
                     display: flex;
                     align-items: center;
-                    justifyContent: center;
+                    justify-content: center;
                     gap: 8px;
                 }
                 .btn-action:hover {

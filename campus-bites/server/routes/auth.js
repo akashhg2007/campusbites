@@ -47,6 +47,7 @@ router.post('/verify-otp', async (req, res) => {
         if (!user) return res.status(400).json({ message: 'Invalid or expired OTP' });
         if (!user.otp || !user.otpExpires) return res.status(400).json({ message: 'Invalid or expired OTP' });
         if (user.otpExpires < Date.now()) return res.status(400).json({ message: 'Invalid or expired OTP' });
+        if (user.otp.length !== otp.length) return res.status(400).json({ message: 'Invalid or expired OTP' });
 
         const otpMatch = crypto.timingSafeEqual(Buffer.from(user.otp), Buffer.from(otp));
         if (!otpMatch) return res.status(400).json({ message: 'Invalid or expired OTP' });

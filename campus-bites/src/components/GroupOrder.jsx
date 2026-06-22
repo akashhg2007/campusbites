@@ -11,7 +11,7 @@ const GroupOrder = ({ onAddItems }) => {
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    useSocket('group-upgroup-updated', (data) => setGroup(data));
+    useSocket('group-updated', (data) => setGroup(data));
 
     const createGroup = async () => {
         setLoading(true);

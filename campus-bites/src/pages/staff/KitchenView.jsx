@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { LogOut, RefreshCw, Clock, ChefHat, CheckCircle2, Flame, Inbox, PackageCheck, Phone, MapPin } from 'lucide-react';
 import { useSocket, emitSocket } from '../../hooks/useSocket';
 import { notify } from '../../components/Toast';
@@ -331,7 +331,7 @@ const KitchenView = () => {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
                     gap: 1.5rem;
-                    marginBottom: 3rem;
+                    margin-bottom: 3rem;
                 }
                 .main-container {
                     maxWidth: 1400px;

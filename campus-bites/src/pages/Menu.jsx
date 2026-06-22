@@ -3,8 +3,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
-    ShoppingCart, Star, Clock, Search, TrendingUp, Sparkles, Filter,
-    Plus, ChefHat, User, Mail, Phone, MapPin, Instagram, Twitter, Mic, MicOff
+    Star, Clock, Search, TrendingUp, Sparkles, Filter,
+    Plus, User, Mail, Phone, MapPin, Instagram, Twitter
 } from 'lucide-react';
 import API_URL from '../apiConfig';
 import { useRecommendations } from '../hooks/useQueries';
