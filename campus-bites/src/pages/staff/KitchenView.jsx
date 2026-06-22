@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { LogOut, RefreshCw, Clock, ChefHat, CheckCircle2, Flame, Inbox, PackageCheck, Phone, MapPin } from 'lucide-react';
 import { useSocket, emitSocket } from '../../hooks/useSocket';
+import ProgressRing from '../../components/ProgressRing';
+import BottomSheet from '../../components/BottomSheet';
 import { notify } from '../../components/Toast';
 
 import API_URL from '../../apiConfig';
@@ -74,12 +76,20 @@ const KitchenView = () => {
     const OrderCard = ({ order }) => (
         <div key={order._id} className="glass-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <div>
-                    <p style={{ fontSize: '0.65rem', color: '#6B7280', margin: '0 0 2px 0', letterSpacing: '1px', fontWeight: 700 }}>ORDER TICKET</p>
-                    <p style={{ fontWeight: 800, fontSize: '1.25rem', color: 'white', margin: 0 }}>#{order._id.slice(-6).toUpperCase()}</p>
-                    <p style={{ fontSize: '0.7rem', color: '#9CA3AF', margin: '4px 0 0 0', fontWeight: 600 }}>
-                        Ordered: {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <ProgressRing
+                        progress={order.status === 'pending' ? 25 : order.status === 'preparing' ? 60 : order.status === 'ready' ? 90 : 100}
+                        size={48}
+                        strokeWidth={4}
+                        color={order.status === 'pending' ? '#F59E0B' : order.status === 'preparing' ? '#E23744' : '#22C55E'}
+                    />
+                    <div>
+                        <p style={{ fontSize: '0.65rem', color: '#6B7280', margin: '0 0 2px 0', letterSpacing: '1px', fontWeight: 700 }}>ORDER TICKET</p>
+                        <p style={{ fontWeight: 800, fontSize: '1.25rem', color: 'white', margin: 0 }}>#{order._id.slice(-6).toUpperCase()}</p>
+                        <p style={{ fontSize: '0.7rem', color: '#9CA3AF', margin: '4px 0 0 0', fontWeight: 600 }}>
+                            Ordered: {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <p style={{ fontSize: '0.65rem', color: '#6B7280', margin: '0 0 2px 0', letterSpacing: '1px', fontWeight: 700 }}>PICKUP TIME</p>

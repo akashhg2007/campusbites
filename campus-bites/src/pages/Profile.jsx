@@ -9,6 +9,9 @@ import {
 } from 'lucide-react';
 import { useLoyalty } from '../hooks/useQueries';
 import ThemeToggle from '../components/ThemeToggle';
+import LanguageSelector from '../components/LanguageSelector';
+import SocialShare from '../components/SocialShare';
+import RecurringOrders from '../components/RecurringOrders';
 import { notify } from '../components/Toast';
 import { LevelBadge, AchievementList } from '../components/Gamification';
 import SpendingChart from '../components/SpendingChart';
@@ -297,8 +300,9 @@ const Profile = () => {
                 </div>
             </div>
 
-            {/* Theme Toggle */}
-            <div style={{ position: 'absolute', top: '2rem', right: '1rem', zIndex: 10 }}>
+            {/* Theme Toggle + Language */}
+            <div style={{ position: 'absolute', top: '2rem', right: '1rem', zIndex: 10, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <LanguageSelector />
                 <ThemeToggle />
             </div>
 
@@ -401,6 +405,17 @@ const Profile = () => {
                     </div>
                 </div>
             ))}
+
+            {/* Social Share */}
+            <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', color: '#9CA3AF' }}>Share</h3>
+                <SocialShare />
+            </div>
+
+            {/* Recurring Orders */}
+            <div style={{ marginBottom: '2rem' }}>
+                <RecurringOrders />
+            </div>
 
             {/* Logout Button */}
             <button

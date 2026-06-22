@@ -10,7 +10,8 @@ import API_URL from '../apiConfig';
 import { useRecommendations } from '../hooks/useQueries';
 import { useVoiceOrder } from '../hooks/useVoiceOrder';
 import VoiceButton from '../components/VoiceButton';
-import { SkeletonGrid, SkeletonProductCard } from '../components/Skeleton';
+import SearchBar from '../components/SearchBar';
+import { SkeletonGrid } from '../components/Skeleton';
 import { notify } from '../components/Toast';
 
 const FoodCard3DPreview = React.lazy(() => import('../components/FoodCard3D'));
@@ -181,35 +182,13 @@ const Menu = () => {
                     </div>
                 </div>
 
-                {/* Search Omni-bar */}
-                <div className="glass-panel" style={{
-                    borderRadius: '20px',
-                    padding: '0.75rem 1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    animation: 'slideInUp 0.6s ease-out',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    marginBottom: '2rem'
-                }}>
-                    <Search color="#9CA3AF" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search for food..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'white',
-                            width: '100%',
-                            fontSize: '1rem',
-                            outline: 'none'
-                        }}
-                    />
-                    <div style={{ background: 'rgba(226, 55, 68, 0.15)', borderRadius: '12px', padding: '10px' }}>
-                        <TrendingUp size={18} color="#E23744" />
-                    </div>
+                {/* Search */}
+                <div style={{ marginBottom: '2rem' }}>
+                    <SearchBar products={products} onAddToCart={addToCart} />
+                </div>
+
+                {/* Voice Button */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
                     <VoiceButton isListening={isListening} onClick={isListening ? stopListening : startListening} />
                 </div>
 

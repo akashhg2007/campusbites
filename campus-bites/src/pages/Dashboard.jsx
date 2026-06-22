@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Home, ShoppingBag, User, Receipt } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import QuickReorder from '../components/QuickReorder';
+import ChatBot from '../components/ChatBot';
 import { emitSocket } from '../hooks/useSocket';
 
 const Dashboard = () => {
@@ -51,6 +52,9 @@ const Dashboard = () => {
             <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 1001 }}>
                 <ThemeToggle />
             </div>
+
+            {/* ChatBot */}
+            <ChatBot />
 
             {/* Bottom Floating Dock Navigation */}
             <nav style={{

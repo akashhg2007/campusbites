@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Minus, Plus, Clock, ShoppingBag, ArrowRight, Heart } from 'lucide-react';
+import { Minus, Plus, Clock, ShoppingBag, ArrowRight, Heart, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import UPIPayment from '../components/UPIPayment';
 import GroupOrder from '../components/GroupOrder';
+import SmartPickupTime from '../components/SmartPickupTime';
+import AddressBook from '../components/AddressBook';
 import { notify } from '../components/Toast';
 
 import API_URL from '../apiConfig';
@@ -432,242 +435,18 @@ const Cart = () => {
                         {user?.department && <p style={{ color: '#6B7280', fontSize: '0.8rem', marginTop: 4 }}>{user.department}</p>}
                     </div>
                 ) : (
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Clock size={16} color="#E23744" /> Select Pickup Time
-                </h3>)}
+                    <SmartPickupTime onSelect={setPickupTime} selectedTime={pickupTime} />
+                )}
 
-                {!isLecturer && <div className="glass-panel" style={{ padding: '2rem 1.5rem', borderRadius: '32px' }}>
-                    {/* Visual Clock Display */}
-                    <div className="clock-face" style={{
-                        position: 'relative',
-                        width: '220px',
-                        height: '220px',
-                        margin: '0 auto 2rem',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        {/* Clock Glow */}
-                        <div style={{
-                            position: 'absolute',
-                            width: '100%',
-                            height: '100%',
-                            borderRadius: '50%',
-                            background: 'radial-gradient(circle at center, rgba(226, 55, 68, 0.08) 0%, transparent 70%)',
-                            pointerEvents: 'none'
-                        }} />
-                        {/* Clock Face Numbers */}
-                        {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, idx) => {
-                            const angle = (idx * 30 - 90) * (Math.PI / 180);
-                            const radius = 85;
-                            const x = Math.cos(angle) * radius;
-                            const y = Math.sin(angle) * radius;
-                            return (
-                                <div
-                                    key={num}
-                                    className="clock-number"
-                                    style={{
-                                        position: 'absolute',
-                                        left: `calc(50% + ${x}px - 14px)`,
-                                        top: `calc(50% + ${y}px - 14px)`,
-                                        width: '28px',
-                                        height: '28px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '0.9rem',
-                                        fontWeight: 700,
-                                        color: num % 3 === 0 ? '#FFFFFF' : '#6B7280',
-                                        opacity: num % 3 === 0 ? 1 : 0.6
-                                    }}
-                                >
-                                    {num}
-                                </div>
-                            );
-                        })}
-
-                        {/* Center Dot */}
-                        <div style={{
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '50%',
-                            background: '#FFFFFF',
-                            position: 'absolute',
-                            zIndex: 10,
-                            boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)',
-                            border: '4px solid #E23744'
-                        }} />
-
-                        {/* Clock Hands */}
-                        {(() => {
-                            let hourDeg = 90; // Default 3 o'clock (horizontal right) is 0deg in CSS rotation if not handled carefully, but let's assume standard 12 is top.
-                            // CSS transform rotate(0deg) points UP if element is vertical.
-                            // But usually with absolute positioning we center it.
-                            // Let's parse the time string "HH:MM PM"
-                            let minuteDeg = 0;
-
-                            if (pickupTime) {
-                                try {
-                                    // Example: "12:30 PM"
-                                    const [timePart, modifier] = pickupTime.split(' ');
-                                    let [hours, minutes] = timePart.split(':').map(Number);
-
-                                    if (modifier === 'PM' && hours !== 12) hours += 12;
-                                    if (modifier === 'AM' && hours === 12) hours = 0;
-
-                                    // Convert to degrees
-                                    // 12 hours = 360 deg => 1 hour = 30 deg
-                                    // 60 min = 360 deg => 1 min = 6 deg
-                                    // Hour hand moves by minutes too: 0.5 deg per minute
-                                    hourDeg = (hours % 12) * 30 + minutes * 0.5;
-                                    minuteDeg = minutes * 6;
-                                } catch (e) {
-                                    // Default if parse fails
-                                    const now = new Date();
-                                    hourDeg = (now.getHours() % 12) * 30 + now.getMinutes() * 0.5;
-                                    minuteDeg = now.getMinutes() * 6;
-                                }
-                            } else {
-                                // Default default: current time
-                                const now = new Date();
-                                hourDeg = (now.getHours() % 12) * 30 + now.getMinutes() * 0.5;
-                                minuteDeg = now.getMinutes() * 6;
-                            }
-
-                            return (
-                                <>
-                                    {/* Hour Hand */}
-                                    <div
-                                        className="clock-hand-shadow"
-                                        style={{
-                                            position: 'absolute',
-                                            bottom: '50%',
-                                            left: '50%',
-                                            width: '6px',
-                                            height: '55px',
-                                            background: 'linear-gradient(to top, #E23744, #EF4444)',
-                                            borderRadius: '6px 6px 4px 4px',
-                                            transformOrigin: 'bottom center',
-                                            transform: `translateX(-50%) rotate(${hourDeg}deg)`,
-                                            transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                                            zIndex: 5
-                                        }}
-                                    />
-                                    {/* Minute Hand */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        bottom: '50%',
-                                        left: '50%',
-                                        width: '3px',
-                                        height: '85px',
-                                        background: 'rgba(255, 255, 255, 0.9)',
-                                        borderRadius: '4px',
-                                        transformOrigin: 'bottom center',
-                                        transform: `translateX(-50%) rotate(${minuteDeg}deg)`,
-                                        transition: 'transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                                        zIndex: 4,
-                                        boxShadow: '0 0 10px rgba(255,255,255,0.2)'
-                                    }} />
-                                </>
-                            );
-                        })()}
-
-                    </div>
-
-                    {/* Selected Time Display - Moved Below Clock */}
-                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <div style={{
-                            display: 'inline-block',
-                            fontSize: '1.25rem',
-                            fontWeight: 800,
-                            color: '#FFFFFF',
-                            letterSpacing: '0.5px',
-                            background: 'rgba(226, 55, 68, 0.95)',
-                            padding: '8px 24px',
-                            borderRadius: '16px',
-                            boxShadow: '0 8px 20px rgba(226, 55, 68, 0.4)',
-                            transition: 'all 0.3s ease',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            zIndex: 10
-                        }}>
-                            {pickupTime || 'Select Time'}
-                        </div>
-                    </div>
-
-                    {/* Quick Time Slots */}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <p style={{ fontSize: '0.85rem', color: '#9CA3AF', marginBottom: '0.75rem' }}>Quick Select</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                            {['09:00 AM', '11:00 AM', '01:00 PM', '03:00 PM', '05:00 PM', '06:30 PM'].map(time => (
-                                <button
-                                    key={time}
-                                    onClick={() => setPickupTime(time)}
-                                    style={{
-                                        padding: '0.75rem',
-                                        borderRadius: '12px',
-                                        border: pickupTime === time ? '2px solid #E23744' : '1px solid rgba(255,255,255,0.1)',
-                                        background: pickupTime === time ? 'rgba(226, 55, 68, 0.1)' : 'rgba(255,255,255,0.03)',
-                                        color: pickupTime === time ? '#E23744' : 'white',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    {time}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Manual Time Input */}
-                    <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem' }}>
-                        <p style={{ fontSize: '0.85rem', color: '#9CA3AF', marginBottom: '1rem' }}>Or set a custom time</p>
-                        <div style={{
-                            display: 'flex',
-                            gap: '12px',
-                            alignItems: 'center',
-                            background: 'rgba(255,255,255,0.02)',
-                            padding: '4px 12px',
-                            borderRadius: '16px'
-                        }}>
-                            <input
-                                type="time"
-                                value={convert12to24(pickupTime)}
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        const [hours, minutes] = e.target.value.split(':');
-                                        const hour = parseInt(hours);
-                                        const ampm = hour >= 12 ? 'PM' : 'AM';
-                                        const displayHour = hour % 12 || 12;
-                                        setPickupTime(`${displayHour.toString().padStart(2, '0')}:${minutes} ${ampm}`);
-                                    }
-                                }}
-                                style={{
-                                    flex: 1,
-                                    padding: '0.6rem 0',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: 'white',
-                                    fontSize: '1rem',
-                                    fontWeight: 600,
-                                    outline: 'none',
-                                    cursor: 'pointer'
-                                }}
-                            />
-                            <div style={{
-                                padding: '8px',
-                                background: 'rgba(255,255,255,0.05)',
-                                borderRadius: '10px',
-                            }}>
-                                <Clock size={16} color="#9CA3AF" />
-                            </div>
-                        </div>
-                    </div>
                 {!isLecturer && <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '1rem', textAlign: 'center' }}>Pickup available during college hours: 07:00 AM - 07:00 PM</p>}
-                </div>}
             </div>
+
+            {/* Delivery Address (Students) */}
+            {!isLecturer && (
+                <div style={{ marginBottom: '2rem' }}>
+                    <AddressBook />
+                </div>
+            )}
 
             {/* Group Ordering */}
             <div style={{ marginBottom: '2rem' }}>

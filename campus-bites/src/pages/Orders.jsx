@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, CheckCircle, Package, ChefHat, RefreshCw,
     Calendar, ShoppingBag, Utensils
@@ -11,7 +11,9 @@ import { useSocket, emitSocket } from '../hooks/useSocket';
 import { useMyOrders } from '../hooks/useQueries';
 import { notify } from '../components/Toast';
 import OrderTimeline from '../components/OrderTimeline';
-import AnimatedNumber from '../components/AnimatedNumber';
+import ProgressRing from '../components/ProgressRing';
+import FeedbackForm from '../components/FeedbackForm';
+import SocialShare from '../components/SocialShare';
 
 import API_URL from '../apiConfig';
 
@@ -484,13 +486,7 @@ const Orders = () => {
                                         <RefreshCw size={16} /> Reorder
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            if (status.progress < 100) {
-                                                navigate('/dashboard/orders');
-                                            } else {
-                                                notify.info('Rating feature coming soon!');
-                                            }
-                                        }}
+                                        onClick={() => navigate('/dashboard/orders')}
                                         style={{
                                         flex: 2,
                                         background: 'linear-gradient(135deg, #E23744 0%, #DC2626 100%)',
@@ -505,6 +501,18 @@ const Orders = () => {
                                     }}>
                                         {status.progress < 100 ? 'Track Status' : 'Rate Order'}
                                     </button>
+                                </div>
+
+                                {/* Feedback for completed orders */}
+                                {order.status === 'completed' && (
+                                    <div style={{ marginTop: '1rem' }}>
+                                        <FeedbackForm orderId={order._id} onSubmitted={() => refetch()} />
+                                    </div>
+                                )}
+
+                                {/* Social Share */}
+                                <div style={{ marginTop: '0.75rem' }}>
+                                    <SocialShare title={`I ordered ${order.items.map(i => i.product?.name).filter(Boolean).join(', ')} from Campus Bites!`} />
                                 </div>
                             </div>
                         );
