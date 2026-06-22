@@ -1,4 +1,4 @@
-const CACHE_NAME = 'campusbites-v1';
+const CACHE_NAME = 'campusbites-v2';
 const STATIC_ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', (event) => {
@@ -25,21 +25,4 @@ self.addEventListener('fetch', (event) => {
             caches.match(event.request).then(cached => cached || fetch(event.request))
         );
     }
-});
-
-self.addEventListener('push', (event) => {
-    const data = event.data?.json() || { title: 'Campus Bites', body: 'You have a notification!' };
-    event.waitUntil(
-        self.registration.showNotification(data.title, {
-            body: data.body,
-            icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png',
-            vibrate: [200, 100, 200]
-        })
-    );
-});
-
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    event.waitUntil(clients.openWindow('/dashboard/orders'));
 });
