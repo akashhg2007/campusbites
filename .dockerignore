@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+.git
+.gitignore
+README.md
+*.md
+campus-bites/node_modules
+campus-bites/dist
+campus-bites/public
+campus-bites/src
+campus-bites/.vscode
+OpenWA
