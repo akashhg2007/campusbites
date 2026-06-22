@@ -1,17 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Home, ShoppingBag, User, Receipt } from 'lucide-react';
+import { Home, User, Receipt } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import QuickReorder from '../components/QuickReorder';
 import ChatBot from '../components/ChatBot';
+import CartBadgePulse from '../components/CartBadgePulse';
+import CartFlyAnimation from '../components/CartFlyAnimation';
 import { emitSocket } from '../hooks/useSocket';
 
 const Dashboard = () => {
     const { cartCount } = useCart();
     const { user } = useAuth();
     const location = useLocation();
+    const cartRef = useRef(null);
 
     useEffect(() => {
         if (user?.id) emitSocket('join-user', user.id);
@@ -21,7 +24,7 @@ const Dashboard = () => {
 
     const navItems = [
         { path: '/dashboard/menu', icon: Home, label: 'Home' },
-        { path: '/dashboard/cart', icon: ShoppingBag, label: 'Cart', badge: cartCount },
+        { path: '/dashboard/cart', icon: CartBadgePulse, label: 'Cart', badge: cartCount, isBadge: true },
         { path: '/dashboard/orders', icon: Receipt, label: 'Orders' },
         { path: '/dashboard/profile', icon: User, label: 'Profile' }
     ];
@@ -82,6 +85,7 @@ const Dashboard = () => {
                             <Link
                                 key={item.path}
                                 to={item.path}
+                                ref={item.isBadge ? cartRef : undefined}
                                 style={{
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -98,34 +102,16 @@ const Dashboard = () => {
                                     transform: active ? 'translateY(-4px)' : 'none',
                                     transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                                 }}>
-                                    <Icon
-                                        size={24}
-                                        strokeWidth={active ? 2.5 : 2}
-                                        style={{
-                                            filter: active ? 'drop-shadow(0 0 8px rgba(226, 55, 68, 0.5))' : 'none'
-                                        }}
-                                    />
-
-                                    {/* Cart Badge */}
-                                    {item.badge > 0 && (
-                                        <span style={{
-                                            position: 'absolute',
-                                            top: '-8px',
-                                            right: '-8px',
-                                            background: '#E23744',
-                                            color: 'white',
-                                            fontSize: '10px',
-                                            fontWeight: 'bold',
-                                            minWidth: '16px',
-                                            height: '16px',
-                                            borderRadius: '50%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            border: '2px solid #1C1C1E'
-                                        }}>
-                                            {item.badge}
-                                        </span>
+                                    {item.isBadge ? (
+                                        <Icon count={item.badge} ref={cartRef} />
+                                    ) : (
+                                        <Icon
+                                            size={24}
+                                            strokeWidth={active ? 2.5 : 2}
+                                            style={{
+                                                filter: active ? 'drop-shadow(0 0 8px rgba(226, 55, 68, 0.5))' : 'none'
+                                            }}
+                                        />
                                     )}
                                 </div>
                                 <span style={{
