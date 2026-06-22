@@ -82,6 +82,12 @@ const Menu = () => {
         return matchesCategory && matchesSearch && matchesFoodType;
     });
 
+    const shimmerStyle = {
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)',
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 1.5s infinite'
+    };
+
     if (loading) return (
         <div style={{ padding: '2rem 1rem', maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ ...shimmerStyle, height: '200px', borderRadius: '24px', marginBottom: '2rem' }} />
@@ -89,12 +95,6 @@ const Menu = () => {
             <SkeletonGrid count={6} />
         </div>
     );
-
-    const shimmerStyle = {
-        background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)',
-        backgroundSize: '200% 100%',
-        animation: 'shimmer 1.5s infinite'
-    };
 
     return (
         <div style={{ padding: '0 1rem 8rem 1rem', maxWidth: '600px', margin: '0 auto' }}>
