@@ -83,6 +83,11 @@ app.use('/api/loyalty', require('./routes/loyalty'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/upi', require('./routes/upi'));
 app.use('/api/recurring', require('./routes/recurring'));
+app.use('/api/addresses', require('./routes/addresses'));
+app.use('/api/feedback', require('./routes/feedback'));
+app.use('/api/push', require('./routes/push'));
+app.use('/api/admin/users', require('./routes/adminUsers'));
+app.use('/api/inventory', require('./routes/inventory'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const { setupWhatsAppBridge } = require('./utils/whatsappBridge');

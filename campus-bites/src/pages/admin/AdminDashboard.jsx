@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, BarChart3, LogOut, ShieldCheck, Menu, X } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BarChart3, LogOut, ShieldCheck, Menu, X, Users, Package } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
@@ -169,6 +169,12 @@ const AdminDashboard = () => {
                 <nav style={{ flex: 1 }}>
                     <Link to="/admin/menu" onClick={() => setIsMobileMenuOpen(false)} className={`nav-link ${isActive('/admin/menu') ? 'active' : ''}`}>
                         <UtensilsCrossed size={20} style={{ marginRight: '1rem' }} /> Manage Menu
+                    </Link>
+                    <Link to="/admin/users" onClick={() => setIsMobileMenuOpen(false)} className={`nav-link ${isActive('/admin/users') ? 'active' : ''}`}>
+                        <Users size={20} style={{ marginRight: '1rem' }} /> Users
+                    </Link>
+                    <Link to="/admin/inventory" onClick={() => setIsMobileMenuOpen(false)} className={`nav-link ${isActive('/admin/inventory') ? 'active' : ''}`}>
+                        <Package size={20} style={{ marginRight: '1rem' }} /> Inventory
                     </Link>
                     <Link to="/admin/analytics" onClick={() => setIsMobileMenuOpen(false)} className={`nav-link ${isActive('/admin/analytics') ? 'active' : ''}`}>
                         <BarChart3 size={20} style={{ marginRight: '1rem' }} /> Analytics

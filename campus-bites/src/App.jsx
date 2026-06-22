@@ -3,8 +3,11 @@ import SplashScreen from './components/SplashScreen'
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
+import { I18nProvider } from './context/I18nContext'
 import { ToastProvider } from './components/Toast'
 import ScrollToTop from './components/ScrollToTop'
+import { OfflineBanner } from './hooks/useOffline.jsx'
+import Onboarding from './components/Onboarding'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -16,6 +19,8 @@ import Profile from './pages/Profile'
 // Admin & Staff
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ManageMenu from './pages/admin/ManageMenu'
+import ManageUsers from './pages/admin/ManageUsers'
+import Inventory from './pages/admin/Inventory'
 import Analytics from './pages/admin/Analytics'
 import KitchenView from './pages/staff/KitchenView'
 import ForgotPassword from './pages/ForgotPassword'
@@ -46,19 +51,25 @@ const ProtectedRoute = ({ children, roles }) => {
 };
 
 function App() {
-    /* Splash Screen State */
     const [showSplash, setShowSplash] = React.useState(true);
+    const [showOnboarding, setShowOnboarding] = React.useState(() => !localStorage.getItem('campusbites-onboarded'));
 
     if (showSplash) {
         return <SplashScreen onComplete={() => setShowSplash(false)} />;
     }
 
+    if (showOnboarding) {
+        return <Onboarding onComplete={() => setShowOnboarding(false)} />;
+    }
+
     return (
+        <I18nProvider>
         <AuthProvider>
             <CartProvider>
                 <Router>
                     <ToastProvider />
                     <ScrollToTop />
+                    <OfflineBanner />
                     <Routes>
                         <Route path="/" element={<Login />} />
                         <Route path="/register" element={<Register />} />
@@ -85,6 +96,8 @@ function App() {
                         }>
                             <Route index element={<Navigate to="menu" replace />} />
                             <Route path="menu" element={<ManageMenu />} />
+                            <Route path="users" element={<ManageUsers />} />
+                            <Route path="inventory" element={<Inventory />} />
                             <Route path="analytics" element={<Analytics />} />
                         </Route>
 
@@ -118,6 +131,7 @@ function App() {
                 </Router>
             </CartProvider>
         </AuthProvider>
+        </I18nProvider>
     )
 }
 

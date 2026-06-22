@@ -111,3 +111,29 @@ export const useDeleteProduct = () => {
         onSuccess: () => qc.invalidateQueries({ queryKey: ['products'] })
     });
 };
+
+export const useAddresses = () => {
+    const user = useAuthStore(s => s.user);
+    return useQuery({
+        queryKey: ['addresses'],
+        queryFn: () => fetchWithAuth('/api/addresses'),
+        enabled: !!user,
+        retry: false
+    });
+};
+
+export const useFeedbackStats = () => {
+    return useQuery({
+        queryKey: ['feedback-stats'],
+        queryFn: () => fetchWithAuth('/api/feedback/stats'),
+        retry: false
+    });
+};
+
+export const useAdminUsers = (params = '') => {
+    return useQuery({
+        queryKey: ['admin-users', params],
+        queryFn: () => fetchWithAuth(`/api/admin/users?${params}`),
+        retry: false
+    });
+};

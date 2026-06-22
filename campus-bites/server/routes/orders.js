@@ -5,6 +5,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const { verifyUser, checkRole } = require('../middleware/auth');
 const { sendWhatsAppMessage, getMessageTemplate } = require('../utils/whatsapp');
+const { sendPushNotification } = require('./push');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 
@@ -116,6 +117,13 @@ router.put('/:id/status', verifyUser, checkRole(['admin', 'staff']), async (req,
             const message = getMessageTemplate(status, order);
             sendWhatsAppMessage(order.user.phone, message);
         }
+
+        sendPushNotification(order.user._id, {
+            title: 'Campus Bites',
+            body: `Order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`,
+            icon: '/icons/icon-192.svg',
+            data: { orderId: order._id.toString() }
+        });
 
         const io = req.app.get('io');
         if (io) {
