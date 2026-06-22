@@ -13,15 +13,28 @@ const queryClient = new QueryClient({
     }
 })
 
+const GCID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+const AppWithProviders = () => (
+    <QueryClientProvider client={queryClient}>
+        {GCID ? (
+            <GoogleOAuthProvider clientId={GCID}>
+                <App />
+                <SpeedInsights />
+            </GoogleOAuthProvider>
+        ) : (
+            <>
+                <App />
+                <SpeedInsights />
+            </>
+        )}
+    </QueryClientProvider>
+);
+
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <ErrorBoundary>
-            <QueryClientProvider client={queryClient}>
-                <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
-                    <App />
-                    <SpeedInsights />
-                </GoogleOAuthProvider>
-            </QueryClientProvider>
+            <AppWithProviders />
         </ErrorBoundary>
     </React.StrictMode>,
 )
