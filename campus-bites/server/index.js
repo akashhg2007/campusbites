@@ -1,144 +1,94 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+const path = require('path');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: process.env.FRONTEND_URL || '*', methods: ['GET', 'POST'] }
+});
+
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(helmet({
-    crossOriginResourcePolicy: false // Allow cross-origin requests
-}));
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({
-    origin: function(origin, callback) {
-        // Allow all origins if FRONTEND_URL not set (development/migration period)
-        const allowedOrigin = process.env.FRONTEND_URL;
-        if (!allowedOrigin || !origin || origin === allowedOrigin) {
-            callback(null, true);
-        } else {
-            callback(null, true); // Temporarily allow all to avoid breaking changes
-        }
-    },
+    origin: process.env.FRONTEND_URL || '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
+app.use(mongoSanitize());
 
-// Rate Limiting
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
-    message: "Too many requests from this IP, please try again after 15 minutes"
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: { message: 'Too many requests, please try again after 15 minutes' }
 });
 app.use('/api/', apiLimiter);
 
-// Database Connection
-const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/campus-bites';
+app.set('io', io);
 
-// Validate MongoDB URI
+const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/campus-bites';
 if (!mongoURI.startsWith('mongodb://') && !mongoURI.startsWith('mongodb+srv://')) {
-    console.error('ERROR: Invalid MONGO_URI format. Must start with mongodb:// or mongodb+srv://');
-    console.error('Current MONGO_URI:', mongoURI);
+    console.error('ERROR: Invalid MONGO_URI format');
     process.exit(1);
 }
 
-console.log('Attempting to connect to MongoDB...');
-// Safely log the URI structure to debug parsing issues
-try {
-    const uriParts = mongoURI.split('@');
-    if (uriParts.length > 1) {
-        console.log('MongoDB URI Host:', uriParts[1].split('/')[0]); // Log just the host part
-        console.log('MongoDB User:', uriParts[0].split('//')[1].split(':')[0]); // Log the username
-    } else {
-        console.error('ERROR: MongoDB URI does not contain an "@" symbol. Check the format.');
-    }
-} catch (e) {
-    console.error('Error parsing MongoDB URI for logging:', e.message);
-}
-
-mongoose.connect(mongoURI, {
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-})
+mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000 })
     .then(async () => {
-        console.log('MongoDB Connected Successfully');
-        
-        // Auto-seed default users on startup
+        console.log('MongoDB Connected');
         try {
             const User = require('./models/User');
-            const users = [
+            const seedData = [
                 { name: 'Admin User', email: 'admin@bites.com', password: 'admin123', role: 'admin' },
                 { name: 'Staff User', email: 'staff@bites.com', password: 'staff123', role: 'staff' },
                 { name: 'Delivery Boy', email: 'delivery@bites.com', password: 'delivery123', role: 'delivery' },
                 { name: 'Student User', email: 'student@bites.com', password: 'student123', role: 'student' }
             ];
-            for (const u of users) {
+            for (const u of seedData) {
                 const exists = await User.findOne({ email: u.email });
-                if (!exists) {
-                    await new User(u).save();
-                    console.log(`Auto-seeded ${u.role} user: ${u.email}`);
-                } else {
-                    // Force sync default credentials
-                    exists.password = u.password;
-                    exists.role = u.role;
-                    await exists.save();
-                }
+                if (!exists) { await new User(u).save(); console.log(`Seeded ${u.role}: ${u.email}`); }
             }
-        } catch (err) {
-            console.error('Auto-seeding failed:', err.message);
-        }
+        } catch (err) { console.error('Auto-seeding failed:', err.message); }
     })
-    .catch(err => {
-        console.error('MongoDB Connection Error Details:');
-        console.error('Name:', err.name);
-        console.error('Message:', err.message);
-        console.error('Code:', err.code);
-        console.error('Please check your MONGO_URI environment variable');
-    });
+    .catch(err => { console.error('MongoDB Connection Error:', err.message); process.exit(1); });
 
-// Routes
+io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    socket.on('join-kitchen', () => socket.join('kitchen'));
+    socket.on('join-delivery', () => socket.join('delivery'));
+    socket.on('join-user', (userId) => socket.join(`user-${userId}`));
+    socket.on('disconnect', () => console.log('Client disconnected:', socket.id));
+});
+
 app.get('/', (req, res) => {
-    const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
-    res.json({
-        message: 'Campus Bites API is running',
-        dbStatus,
-        env: process.env.NODE_ENV,
-        timestamp: new Date()
-    });
+    res.json({ message: 'Campus Bites API is running', dbStatus: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected' });
 });
 
-const authRoutes = require('./routes/auth');
-const productRoutes = require('./routes/products');
-const orderRoutes = require('./routes/orders');
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/products', require('./routes/products'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/recommendations', require('./routes/recommendations'));
+app.use('/api/groups', require('./routes/groups'));
+app.use('/api/loyalty', require('./routes/loyalty'));
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/upi', require('./routes/upi'));
+app.use('/api/recurring', require('./routes/recurring'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
+const { setupWhatsAppBridge } = require('./utils/whatsappBridge');
+setupWhatsAppBridge(io);
 
-// Temporary Seed Route (Access via http://localhost:5000/api/seed)
-app.get('/api/seed', async (req, res) => {
-    try {
-        const User = require('./models/User');
-        const users = [
-            { name: 'Admin User', email: 'admin@bites.com', password: 'admin123', role: 'admin' },
-            { name: 'Staff User', email: 'staff@bites.com', password: 'staff123', role: 'staff' },
-            { name: 'Delivery Boy', email: 'delivery@bites.com', password: 'delivery123', role: 'delivery' },
-            { name: 'Student User', email: 'student@bites.com', password: 'student123', role: 'student' }
-        ];
-        for (const u of users) {
-            const exists = await User.findOne({ email: u.email });
-            if (!exists) await new User(u).save();
-        }
-        res.json({ message: 'Users seeded successfully' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
+app.use((err, req, res, next) => { console.error(err.stack); res.status(500).json({ message: 'Internal server error' }); });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

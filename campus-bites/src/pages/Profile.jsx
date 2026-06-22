@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
     User, Mail, Lock, Phone, MapPin, CreditCard,
     Bell, Shield, LogOut, ChevronRight, Edit2,
-    Save, X, Heart, Clock, Settings, HelpCircle
+    Save, X, Heart, Clock, Settings, HelpCircle, Star, Gift
 } from 'lucide-react';
+import { useLoyalty } from '../hooks/useQueries';
+import ThemeToggle from '../components/ThemeToggle';
+import { notify } from '../components/Toast';
+import { LevelBadge, AchievementList } from '../components/Gamification';
+import SpendingChart from '../components/SpendingChart';
 
 const Profile = () => {
     const { user, logout } = useAuth();
@@ -17,6 +23,7 @@ const Profile = () => {
         phone: '',
         address: ''
     });
+    const { data: loyalty } = useLoyalty();
 
     const handleLogout = () => {
         logout();
@@ -24,9 +31,7 @@ const Profile = () => {
     };
 
     const handleSave = () => {
-        // TODO: API call to update profile
         setIsEditing(false);
-        alert('Profile updated successfully!');
     };
 
     const accountSections = [
@@ -34,24 +39,24 @@ const Profile = () => {
             title: 'Account Settings',
             items: [
                 { icon: User, label: 'Edit Profile', action: () => setIsEditing(true) },
-                { icon: Lock, label: 'Change Password', action: () => alert('Change password feature coming soon') },
-                { icon: Bell, label: 'Notifications', action: () => alert('Notification settings coming soon') },
-                { icon: Shield, label: 'Privacy & Security', action: () => alert('Privacy settings coming soon') }
+                { icon: Lock, label: 'Change Password', action: () => notify.info('Change password feature coming soon') },
+                { icon: Bell, label: 'Notifications', action: () => notify.info('Notification settings coming soon') },
+                { icon: Shield, label: 'Privacy & Security', action: () => notify.info('Privacy settings coming soon') }
             ]
         },
         {
             title: 'Payment & Orders',
             items: [
-                { icon: CreditCard, label: 'Payment Methods', action: () => alert('Payment methods coming soon') },
+                { icon: CreditCard, label: 'Payment Methods', action: () => notify.info('Payment methods coming soon') },
                 { icon: Clock, label: 'Order History', action: () => navigate('/dashboard/orders') },
-                { icon: Heart, label: 'Favorites', action: () => alert('Favorites feature coming soon') }
+                { icon: Heart, label: 'Favorites', action: () => notify.info('Favorites feature coming soon') }
             ]
         },
         {
             title: 'Support',
             items: [
-                { icon: HelpCircle, label: 'Help Center', action: () => alert('Help center coming soon') },
-                { icon: Settings, label: 'App Settings', action: () => alert('App settings coming soon') }
+                { icon: HelpCircle, label: 'Help Center', action: () => notify.info('Help center coming soon') },
+                { icon: Settings, label: 'App Settings', action: () => notify.info('App settings coming soon') }
             ]
         }
     ];
@@ -292,6 +297,59 @@ const Profile = () => {
                 </div>
             </div>
 
+            {/* Theme Toggle */}
+            <div style={{ position: 'absolute', top: '2rem', right: '1rem', zIndex: 10 }}>
+                <ThemeToggle />
+            </div>
+
+            {/* Loyalty Card */}
+            {loyalty && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel" style={{
+                    padding: '1.5rem', borderRadius: '24px', marginBottom: '2rem',
+                    background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.05))',
+                    border: '1px solid rgba(245,158,11,0.2)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
+                        <div style={{ background: 'rgba(245,158,11,0.2)', padding: '10px', borderRadius: '12px' }}>
+                            <Star size={24} color="#F59E0B" fill="#F59E0B" />
+                        </div>
+                        <div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>Loyalty Points</h3>
+                            <p style={{ color: '#9CA3AF', fontSize: '0.8rem', margin: 0 }}>{loyalty.totalOrders} orders completed</p>
+                        </div>
+                        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                            <p style={{ fontSize: '2rem', fontWeight: 800, color: '#F59E0B', margin: 0 }}>{loyalty.points}</p>
+                            <p style={{ color: '#9CA3AF', fontSize: '0.7rem', margin: 0 }}>points</p>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                        {loyalty.rewards?.map(r => (
+                            <div key={r.id} style={{ minWidth: '120px', background: loyalty.points >= r.cost ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${loyalty.points >= r.cost ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+                                <Gift size={18} color={loyalty.points >= r.cost ? '#22C55E' : '#6B7280'} />
+                                <p style={{ fontSize: '0.75rem', fontWeight: 600, margin: '6px 0 2px', color: loyalty.points >= r.cost ? '#22C55E' : '#9CA3AF' }}>{r.name}</p>
+                                <p style={{ fontSize: '0.7rem', color: '#6B7280', margin: 0 }}>{r.cost} pts</p>
+                            </div>
+                        ))}
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Level Badge */}
+            <div style={{ marginBottom: '2rem' }}>
+                <LevelBadge totalOrders={loyalty?.totalOrders || 0} />
+            </div>
+
+            {/* Spending Chart */}
+            <div style={{ marginBottom: '2rem' }}>
+                <SpendingChart />
+            </div>
+
+            {/* Achievements */}
+            <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '24px', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Achievements</h3>
+                <AchievementList user={loyalty} />
+            </div>
+
             {/* Account Sections */}
             {accountSections.map((section, idx) => (
                 <div key={idx} style={{ marginBottom: '2rem' }}>
@@ -383,7 +441,7 @@ const Profile = () => {
                 color: '#6B7280',
                 fontSize: '0.8rem'
             }}>
-                Campus Bites v2.0 • 2026 Edition
+                Campus Bites v1.0.1 • 2026 Edition
             </div>
         </div>
     );

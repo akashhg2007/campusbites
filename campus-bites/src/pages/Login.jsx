@@ -9,9 +9,6 @@ import API_URL from '../apiConfig';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [otp, setOtp] = useState('');
-    const [showOtp, setShowOtp] = useState(false);
-    const [userId, setUserId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -52,30 +49,6 @@ const Login = () => {
             }
         } catch (err) {
             setError('Server connection error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
-            const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, otp })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                login(data.user, data.token);
-                navigate('/dashboard/menu');
-            } else {
-                setError(data.message || 'Verification failed');
-            }
-        } catch (err) {
-            setError('Server error');
         } finally {
             setLoading(false);
         }
@@ -378,8 +351,7 @@ const Login = () => {
                     }}>{error}</div>
                 )}
 
-                {!showOtp ? (
-                    <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit}>
                         <div className="animate-item delay-5" style={{ marginBottom: '1.25rem', position: 'relative' }}>
                             <input
                                 type="email"
@@ -429,9 +401,9 @@ const Login = () => {
                         </div>
 
                         <div className="animate-item delay-7" style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
-                            <a href="/forgot-password" style={{ color: '#E23744', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 500 }}>
+                            <Link to="/forgot-password" style={{ color: '#E23744', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 500 }}>
                                 Forgot Password?
-                            </a>
+                            </Link>
                         </div>
 
                         <button type="submit" className="btn-modern animate-item delay-8" disabled={loading}>
@@ -454,32 +426,6 @@ const Login = () => {
                             )}
                         </button>
                     </form>
-                ) : (
-                    <form onSubmit={handleVerifyOtp}>
-                        <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                            <input
-                                type="text"
-                                className="input-modern"
-                                placeholder="6-digit Verification Code"
-                                maxLength="6"
-                                style={{ textAlign: 'center', letterSpacing: '0.5rem', fontSize: '1.5rem' }}
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <button type="submit" className="btn-modern" disabled={loading}>
-                            {loading ? 'Verifying...' : 'Verify & Sign In'} <ArrowRight size={20} />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setShowOtp(false)}
-                            style={{ width: '100%', marginTop: '1rem', background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}
-                        >
-                            Back to Login
-                        </button>
-                    </form>
-                )}
 
                 {/* Divider */}
                 <div style={{
@@ -607,16 +553,6 @@ const Login = () => {
                 </p>
             </div>
 
-            {/* Spinning Animation for Loading */}
-            <style>{`
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-                @keyframes pulseGlow {
-                    0%, 100% { opacity: 0.35; }
-                    50% { opacity: 0.65; }
-                }
-            `}</style>
         </div>
     )
 }

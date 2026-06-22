@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Search, Filter, Image as ImageIcon, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import API_URL from '../../apiConfig';
+import CSVUpload from '../../components/CSVUpload';
+import ImageUpload from '../../components/ImageUpload';
+import { notify } from '../../components/Toast';
 
 const ManageMenu = () => {
     const [products, setProducts] = useState([]);
@@ -44,7 +47,7 @@ const ManageMenu = () => {
         if (!window.confirm('Are you sure you want to delete this item?')) return;
 
         if (!user?.id) {
-            alert('Authentication error. Please log in again.');
+            notify.error('Authentication error. Please log in again.');
             return;
         }
 
@@ -55,6 +58,7 @@ const ManageMenu = () => {
             });
 
             if (res.ok) {
+                notify.success('Product deleted');
                 fetchProducts();
             }
         } catch (err) {
@@ -66,7 +70,7 @@ const ManageMenu = () => {
         e.preventDefault();
 
         if (!user?.id) {
-            alert('Authentication error. Please log in again.');
+            notify.error('Authentication error. Please log in again.');
             return;
         }
 
@@ -78,7 +82,7 @@ const ManageMenu = () => {
         const method = editingProduct ? 'PUT' : 'POST';
 
         try {
-            await fetch(url, {
+            const res = await fetch(url, {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -86,10 +90,15 @@ const ManageMenu = () => {
                 },
                 body: JSON.stringify(formData)
             });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                notify.error(data.message || 'Operation failed');
+                return;
+            }
             setIsModalOpen(false);
             fetchProducts();
         } catch (err) {
-            alert('Operation failed');
+            notify.error('Operation failed');
         } finally {
             setLoading(false);
         }
@@ -227,6 +236,11 @@ const ManageMenu = () => {
                 </button>
             </div>
 
+            {/* Bulk Import */}
+            <div style={{ marginBottom: '2rem' }}>
+                <CSVUpload onSuccess={fetchProducts} />
+            </div>
+
             {/* Table Area */}
             <div style={{ overflowX: 'hidden' }}>
                 <table className="admin-table">
@@ -323,8 +337,9 @@ const ManageMenu = () => {
                             </div>
 
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#6B7280', marginBottom: '6px', textTransform: 'uppercase' }}>Image URL</label>
-                                <input className="input-field-dark" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+                                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#6B7280', marginBottom: '6px', textTransform: 'uppercase' }}>Image</label>
+                                <ImageUpload currentUrl={formData.image} onUpload={(url) => setFormData({ ...formData, image: url })} />
+                                <input className="input-field-dark" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="Or paste image URL" style={{ marginTop: '8px' }} />
                             </div>
 
                             {/* Veg/Non-Veg Selection */}

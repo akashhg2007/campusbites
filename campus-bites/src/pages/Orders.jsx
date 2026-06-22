@@ -1,11 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Clock, CheckCircle, Package, ChefHat, RefreshCw,
-    Calendar, ChevronRight, ShoppingBag, Utensils
+    Calendar, ShoppingBag, Utensils
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
+import { useSocket, emitSocket } from '../hooks/useSocket';
+import { useMyOrders } from '../hooks/useQueries';
+import { notify } from '../components/Toast';
+import OrderTimeline from '../components/OrderTimeline';
+import AnimatedNumber from '../components/AnimatedNumber';
 
 import API_URL from '../apiConfig';
 
@@ -16,6 +22,20 @@ const Orders = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const navigate = useNavigate();
+    const { data: queryOrders, refetch } = useMyOrders();
+
+    useEffect(() => {
+        if (user?.id) emitSocket('join-user', user.id);
+    }, [user?.id]);
+
+    useSocket('order-status-changed', useCallback(() => { refetch(); }, [refetch]));
+
+    useEffect(() => {
+        if (queryOrders) {
+            setOrders(queryOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+            setLoading(false);
+        }
+    }, [queryOrders]);
 
     const fetchOrders = async () => {
         if (!user?.id) {
@@ -341,16 +361,9 @@ const Orders = () => {
                                     </div>
                                 </div>
 
-                                {/* Status Bar */}
-                                <div className="status-line">
-                                    <div
-                                        className="status-progress"
-                                        style={{
-                                            width: `${status.progress}%`,
-                                            background: status.color,
-                                            boxShadow: `0 0 10px ${status.color}`
-                                        }}
-                                    />
+                                {/* Status Timeline */}
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <OrderTimeline status={order.status} />
                                 </div>
                                 <div style={{
                                     display: 'flex',
@@ -366,6 +379,19 @@ const Orders = () => {
                                     </div>
                                     <span style={{ opacity: 0.8 }}>{status.desc}</span>
                                 </div>
+
+                                {order.queuePosition && ['pending', 'preparing'].includes(order.status) && (
+                                    <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '12px', padding: '10px 14px', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.85rem', color: '#93C5FD', fontWeight: 600 }}>Queue Position</span>
+                                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#3B82F6' }}>#{order.queuePosition}</span>
+                                    </div>
+                                )}
+                                {order.estimatedMinutes && ['pending', 'preparing'].includes(order.status) && (
+                                    <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', padding: '10px 14px', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.85rem', color: '#FDE68A', fontWeight: 600 }}>Estimated Ready</span>
+                                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#F59E0B' }}>~{order.estimatedMinutes} min</span>
+                                    </div>
+                                )}
 
                                 {/* Items Summary */}
                                 <div style={{
@@ -457,7 +483,15 @@ const Orders = () => {
                                     >
                                         <RefreshCw size={16} /> Reorder
                                     </button>
-                                    <button style={{
+                                    <button
+                                        onClick={() => {
+                                            if (status.progress < 100) {
+                                                navigate('/dashboard/orders');
+                                            } else {
+                                                notify.info('Rating feature coming soon!');
+                                            }
+                                        }}
+                                        style={{
                                         flex: 2,
                                         background: 'linear-gradient(135deg, #E23744 0%, #DC2626 100%)',
                                         border: 'none',

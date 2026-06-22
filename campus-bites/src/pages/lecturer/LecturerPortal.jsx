@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Home, ShoppingBag, Receipt, LogOut, Minus, Plus, Search } from 'lucide-react';
 import API_URL from '../../apiConfig';
+import { notify } from '../../components/Toast';
 
 const LecturerPortal = () => {
     const { user, token, logout } = useAuth();
@@ -67,11 +68,11 @@ const LecturerPortal = () => {
                         })
                     });
                     if (verify.ok) { setCart([]); setSuccessMsg(`✅ Order placed! Delivering to Cabin ${user.cabinNumber}`); setTab('orders'); setTimeout(() => setSuccessMsg(''), 5000); }
-                    else alert('Payment verification failed');
+                    else notify.error('Payment verification failed');
                 },
                 prefill: { name: user.name, email: user.email }, theme: { color: '#E23744' }
             }).open();
-        } catch (err) { alert(err.message || 'Checkout failed'); }
+        } catch (err) { notify.error(err.message || 'Checkout failed'); }
         finally { setOrderLoading(false); }
     };
 

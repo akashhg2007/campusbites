@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Minus, Plus, Clock, ShoppingBag, ArrowRight, CreditCard, Wallet, Heart } from 'lucide-react';
+import { Minus, Plus, Clock, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import UPIPayment from '../components/UPIPayment';
+import GroupOrder from '../components/GroupOrder';
+import { notify } from '../components/Toast';
 
 import API_URL from '../apiConfig';
 
@@ -12,6 +15,7 @@ const Cart = () => {
     const [pickupTime, setPickupTime] = useState('');
     const [isDonationChecked, setIsDonationChecked] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('razorpay');
     const navigate = useNavigate();
 
     const taxAmount = Math.round(cartTotal * 0.05);
@@ -20,12 +24,12 @@ const Cart = () => {
 
     const handleCheckout = async () => {
         if (!pickupTime) {
-            alert('Please select a pickup time');
+            notify.error('Please select a pickup time');
             return;
         }
 
         if (!user || !token) {
-            alert('Please log in to place an order');
+            notify.error('Please log in to place an order');
             navigate('/');
             return;
         }
@@ -79,14 +83,14 @@ const Cart = () => {
 
                         if (verifyRes.ok) {
                             clearCart();
-                            alert('Order placed successfully!');
+                            notify.success('Order placed successfully!');
                             navigate('/dashboard/orders');
                         } else {
-                            alert('Payment verification failed');
+                            notify.error('Payment verification failed');
                         }
                     } catch (err) {
                         console.error('Verification error:', err);
-                        alert('Error verifying payment');
+                        notify.error('Error verifying payment');
                     }
                 },
                 prefill: {
@@ -103,7 +107,7 @@ const Cart = () => {
 
         } catch (err) {
             console.error('Checkout error:', err);
-            alert(err.message || 'Failed to process checkout');
+            notify.error(err.message || 'Failed to process checkout');
         } finally {
             setLoading(false);
         }
@@ -111,9 +115,11 @@ const Cart = () => {
 
     // For lecturer: auto-set pickupTime to cabin delivery label
     const isLecturer = user?.role === 'lecturer';
-    if (isLecturer && !pickupTime) {
-        setPickupTime(`Cabin ${user?.cabinNumber || 'Delivery'}`);
-    }
+    useEffect(() => {
+        if (isLecturer && !pickupTime) {
+            setPickupTime(`Cabin ${user?.cabinNumber || 'Delivery'}`);
+        }
+    }, [isLecturer, pickupTime, user?.cabinNumber]);
 
     const convert12to24 = (time12h) => {
         if (!time12h) return '';
@@ -662,6 +668,36 @@ const Cart = () => {
                 {!isLecturer && <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '1rem', textAlign: 'center' }}>Pickup available during college hours: 07:00 AM - 07:00 PM</p>}
                 </div>}
             </div>
+
+            {/* Group Ordering */}
+            <div style={{ marginBottom: '2rem' }}>
+                <GroupOrder />
+            </div>
+
+            {/* Payment Method */}
+            <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Payment Method</h3>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {[{ id: 'razorpay', label: 'Razorpay', color: '#3B82F6' }, { id: 'upi', label: 'UPI Direct', color: '#8B5CF6' }].map(m => (
+                        <button key={m.id} onClick={() => setPaymentMethod(m.id)} style={{
+                            flex: 1, padding: '12px', borderRadius: '12px',
+                            border: `2px solid ${paymentMethod === m.id ? m.color : 'rgba(255,255,255,0.1)'}`,
+                            background: paymentMethod === m.id ? `${m.color}15` : 'rgba(255,255,255,0.03)',
+                            color: paymentMethod === m.id ? m.color : '#9CA3AF',
+                            cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem',
+                            transition: 'all 0.2s ease'
+                        }}>
+                            {m.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {paymentMethod === 'upi' && (
+                <div style={{ marginBottom: '2rem' }}>
+                    <UPIPayment amount={finalTotal} />
+                </div>
+            )}
 
             {/* Checkout Button */}
             <button

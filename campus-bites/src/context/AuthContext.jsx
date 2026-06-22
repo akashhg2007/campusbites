@@ -1,45 +1,28 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../stores/authStore';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { user, token, loading, login, logout, setLoading, toggleTheme, theme } = useAuthStore();
 
     useEffect(() => {
-        try {
-            const storedUser = localStorage.getItem('user');
-            const storedToken = localStorage.getItem('token');
-            if (storedUser && storedToken) {
-                setUser(JSON.parse(storedUser));
-                setToken(storedToken);
+        const storedToken = useAuthStore.getState().token;
+        if (storedToken) {
+            try {
+                const payload = JSON.parse(atob(storedToken.split('.')[1]));
+                if (payload.exp * 1000 < Date.now()) {
+                    logout();
+                }
+            } catch {
+                logout();
             }
-        } catch (err) {
-            console.error('Error parsing stored auth data:', err);
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-        } finally {
-            setLoading(false);
         }
+        setLoading(false);
     }, []);
 
-    const login = (userData, userToken) => {
-        setUser(userData);
-        setToken(userToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', userToken);
-    };
-
-    const logout = () => {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-    };
-
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, loading, toggleTheme, theme }}>
             {!loading && children}
         </AuthContext.Provider>
     );

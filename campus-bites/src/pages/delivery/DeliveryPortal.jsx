@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, RefreshCw, Clock, Bike, CheckCircle2, Package, Inbox, MapPin, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSocket, emitSocket } from '../../hooks/useSocket';
+import { notify } from '../../components/Toast';
 
 import API_URL from '../../apiConfig';
 
@@ -11,8 +14,13 @@ const DeliveryPortal = () => {
     const { logout, user, token } = useAuth();
     const navigate = useNavigate();
 
-    const fetchOrders = async () => {
-        if (!user?.id) return;
+    useEffect(() => { emitSocket('join-delivery'); }, []);
+
+    useSocket('new-order', useCallback(() => { fetchOrders(); }, []));
+    useSocket('order-updated', useCallback(() => { fetchOrders(); }, []));
+
+    const fetchOrders = useCallback(async () => {
+        if (!user?.id || !token) return;
         try {
             const res = await fetch(`${API_URL}/api/orders/delivery/active`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -24,7 +32,7 @@ const DeliveryPortal = () => {
         } catch (err) {
             console.error('Fetch error', err);
         }
-    };
+    }, [user?.id, token]);
 
     useEffect(() => {
         if (user?.id) {
@@ -32,7 +40,7 @@ const DeliveryPortal = () => {
             const interval = setInterval(fetchOrders, 10000);
             return () => clearInterval(interval);
         }
-    }, [user?.id]);
+    }, [fetchOrders]);
 
     const updateStatus = async (orderId, newStatus) => {
         try {
@@ -50,7 +58,7 @@ const DeliveryPortal = () => {
             });
             if (res.ok) fetchOrders();
         } catch (err) {
-            alert('Update failed');
+            notify.error('Update failed');
         }
     };
 
@@ -314,7 +322,7 @@ const DeliveryPortal = () => {
                     </div>
                     <div>
                         <h1 className="header-title" style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Delivery</h1>
-                        <p className="header-subtitle" style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>Portal v2.0</p>
+                        <p className="header-subtitle" style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>Delivery Portal</p>
                     </div>
                 </div>
 
@@ -333,7 +341,7 @@ const DeliveryPortal = () => {
                     }}>
                         <RefreshCw size={18} /> <span>Sync</span>
                     </button>
-                    <button onClick={() => { logout(); navigate('/login'); }} style={{
+                    <button onClick={() => { logout(); navigate('/'); }} style={{
                         background: 'rgba(239, 68, 68, 0.1)',
                         border: '1px solid rgba(239, 68, 68, 0.2)',
                         color: '#F87171',

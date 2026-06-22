@@ -53,7 +53,7 @@ const Register = () => {
             }
 
             if (res.ok) {
-                login(data.user);
+                login(data.user, data.token);
                 navigate('/dashboard/menu');
             } else {
                 setError(data.message || 'Registration failed');
@@ -82,7 +82,7 @@ const Register = () => {
                 const data = await res.json();
 
                 if (res.ok) {
-                    login(data.user);
+                    login(data.user, data.token);
                     if (data.user.role === 'admin') navigate('/admin/menu');
                     else if (data.user.role === 'staff') navigate('/staff/kitchen');
                     else navigate('/dashboard/menu');

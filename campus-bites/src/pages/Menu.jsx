@@ -1,11 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { motion } from 'framer-motion';
 import {
     ShoppingCart, Star, Clock, Search, TrendingUp, Sparkles, Filter,
-    Plus, ChefHat, User, Mail, Phone, MapPin, Instagram, Twitter
+    Plus, ChefHat, User, Mail, Phone, MapPin, Instagram, Twitter, Mic, MicOff
 } from 'lucide-react';
 import API_URL from '../apiConfig';
+import { useRecommendations } from '../hooks/useQueries';
+import { useVoiceOrder } from '../hooks/useVoiceOrder';
+import VoiceButton from '../components/VoiceButton';
+import FoodCard3DPreview from '../components/FoodCard3D';
+import { SkeletonGrid, SkeletonProductCard } from '../components/Skeleton';
 
 const CONTACT_INFO = {
     email: 'support@campusbites.com',
@@ -23,6 +29,16 @@ const Menu = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [show3D, setShow3D] = useState(false);
+    const { data: recommendations } = useRecommendations();
+
+    const handleVoiceResult = useCallback((parsed) => {
+        parsed.items.forEach(({ product, quantity }) => {
+            for (let i = 0; i < quantity; i++) addToCart(product);
+        });
+    }, [addToCart]);
+
+    const { isListening, transcript, startListening, stopListening } = useVoiceOrder(products, handleVoiceResult);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -61,28 +77,24 @@ const Menu = () => {
         const matchesCategory = category === 'All' || p.category === category;
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesFoodType = foodTypeFilter === 'all' ||
-            (foodTypeFilter === 'veg' && p.isVeg !== false) ||
+            (foodTypeFilter === 'veg' && p.isVeg === true) ||
             (foodTypeFilter === 'nonveg' && p.isVeg === false);
         return matchesCategory && matchesSearch && matchesFoodType;
     });
 
     if (loading) return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            color: '#9CA3AF'
-        }}>
-            <style>{`
-                @keyframes spin-slow {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-            `}</style>
-            <Sparkles style={{ animation: 'spin-slow 3s linear infinite' }} size={48} color="#E23744" />
+        <div style={{ padding: '2rem 1rem', maxWidth: '600px', margin: '0 auto' }}>
+            <div style={{ ...shimmerStyle, height: '200px', borderRadius: '24px', marginBottom: '2rem' }} />
+            <div style={{ ...shimmerStyle, height: '48px', borderRadius: '20px', marginBottom: '2rem' }} />
+            <SkeletonGrid count={6} />
         </div>
     );
+
+    const shimmerStyle = {
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)',
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 1.5s infinite'
+    };
 
     return (
         <div style={{ padding: '0 1rem 8rem 1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -196,10 +208,53 @@ const Menu = () => {
                     <div style={{ background: 'rgba(226, 55, 68, 0.15)', borderRadius: '12px', padding: '10px' }}>
                         <TrendingUp size={18} color="#E23744" />
                     </div>
+                    <VoiceButton isListening={isListening} onClick={isListening ? stopListening : startListening} />
                 </div>
 
+                {isListening && (
+                    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', padding: '10px 16px', marginBottom: '1.5rem', color: '#FCA5A5', fontSize: '0.85rem', textAlign: 'center' }}>
+                        🎤 {transcript || 'Listening... Try "Add two samosas"'}
+                    </div>
+                )}
+
+                {recommendations?.forYou?.length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Sparkles size={16} color="#F59E0B" /> Recommended for You
+                        </h3>
+                        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none' }}>
+                            {recommendations.forYou.slice(0, 4).map((product) => (
+                                <motion.div key={product._id} whileTap={{ scale: 0.95 }} style={{ minWidth: '140px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '10px', cursor: 'pointer' }}
+                                    onClick={() => addToCart(product)}>
+                                    <img src={product.image} alt={product.name} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '10px', marginBottom: '8px' }} />
+                                    <p style={{ fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>{product.name}</p>
+                                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E23744', margin: '4px 0 0 0' }}>₹{product.price}</p>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {recommendations?.timeBased?.length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Clock size={16} color="#3B82F6" /> Perfect for Now
+                        </h3>
+                        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none' }}>
+                            {recommendations.timeBased.map((product) => (
+                                <motion.div key={product._id} whileTap={{ scale: 0.95 }} style={{ minWidth: '140px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '10px', cursor: 'pointer' }}
+                                    onClick={() => addToCart(product)}>
+                                    <img src={product.image} alt={product.name} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '10px', marginBottom: '8px' }} />
+                                    <p style={{ fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>{product.name}</p>
+                                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E23744', margin: '4px 0 0 0' }}>₹{product.price}</p>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Aesthetic Category Selection */}
-                <div style={{ marginBottom: '2.5rem', padding: '0 4px' }}>
+                <div style={{ marginBottom: '2.5rem', padding: '0 4px', position: 'sticky', top: 0, zIndex: 50, background: 'var(--bg-deep)', paddingTop: '8px', paddingBottom: '8px' }}>
                     <div style={{
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -419,15 +474,33 @@ const Menu = () => {
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         Menu <Filter size={18} color="#E23744" />
                     </h2>
-                    <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 500 }}>{filteredProducts.length} items</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button onClick={() => setShow3D(!show3D)} style={{
+                            background: show3D ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${show3D ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                            color: show3D ? '#A78BFA' : '#9CA3AF',
+                            padding: '6px 12px', borderRadius: '10px', cursor: 'pointer',
+                            fontSize: '0.75rem', fontWeight: 600
+                        }}>
+                            {show3D ? '2D' : '3D'}
+                        </button>
+                        <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 500 }}>{filteredProducts.length} items</span>
+                    </div>
                 </div>
 
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)', // 2 columns for mobile
+                    gridTemplateColumns: show3D ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)',
                     gap: '1rem'
                 }}>
-                    {filteredProducts.map((product, idx) => (
+                    {show3D && filteredProducts.map((product) => (
+                            <FoodCard3DPreview
+                                key={product._id}
+                                product={product}
+                                onAddToCart={() => addToCart(product)}
+                            />
+                        ))}
+                    {!show3D && filteredProducts.map((product, idx) => (
                         <div
                             key={product._id}
                             className="glass-panel product-card"
@@ -446,40 +519,39 @@ const Menu = () => {
                                 <img
                                     src={product.image}
                                     alt={product.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 />
+
+                                {/* Gradient Overlay */}
+                                <div style={{
+                                    position: 'absolute', inset: 0,
+                                    background: 'linear-gradient(transparent 50%, rgba(0,0,0,0.7))',
+                                    pointerEvents: 'none'
+                                }} />
 
                                 {/* Veg/Non-Veg Badge - Top Right */}
                                 <div style={{
                                     position: 'absolute',
                                     top: '8px',
                                     right: '8px',
-                                    width: '18px',
-                                    height: '18px',
-                                    border: `2px solid ${product.isVeg !== false ? '#22C55E' : '#EF4444'}`,
-                                    borderRadius: '3px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'white',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                                    gap: '4px',
+                                    padding: '3px 8px',
+                                    borderRadius: '20px',
+                                    background: product.isVeg !== false ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
+                                    border: `1px solid ${product.isVeg !== false ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+                                    backdropFilter: 'blur(8px)'
                                 }}>
-                                    {product.isVeg !== false ? (
-                                        <div style={{
-                                            width: '8px',
-                                            height: '8px',
-                                            borderRadius: '50%',
-                                            background: '#22C55E'
-                                        }} />
-                                    ) : (
-                                        <div style={{
-                                            width: 0,
-                                            height: 0,
-                                            borderLeft: '4px solid transparent',
-                                            borderRight: '4px solid transparent',
-                                            borderBottom: '7px solid #EF4444'
-                                        }} />
-                                    )}
+                                    <div style={{
+                                        width: '8px', height: '8px', borderRadius: '50%',
+                                        background: product.isVeg !== false ? '#22C55E' : '#EF4444'
+                                    }} />
+                                    <span style={{ fontSize: '0.6rem', fontWeight: 700, color: product.isVeg !== false ? '#22C55E' : '#EF4444' }}>
+                                        {product.isVeg !== false ? 'VEG' : 'NON-VEG'}
+                                    </span>
                                 </div>
 
                                 {/* Badges */}

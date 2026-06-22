@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, RefreshCw, Clock, ChefHat, CheckCircle2, Flame, Inbox, PackageCheck, Phone, MapPin } from 'lucide-react';
+import { useSocket, emitSocket } from '../../hooks/useSocket';
+import { notify } from '../../components/Toast';
 
 import API_URL from '../../apiConfig';
 
@@ -9,11 +12,13 @@ const KitchenView = () => {
     const [filter, setFilter] = useState('All');
     const { logout, user, token } = useAuth();
 
-    const fetchOrders = async () => {
-        if (!user?.id) {
-            return;
-        }
+    useEffect(() => { emitSocket('join-kitchen'); }, []);
 
+    useSocket('new-order', useCallback(() => { fetchOrders(); }, []));
+    useSocket('order-updated', useCallback(() => { fetchOrders(); }, []));
+
+    const fetchOrders = useCallback(async () => {
+        if (!user?.id || !token) return;
         try {
             const res = await fetch(`${API_URL}/api/orders/staff/active`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -25,19 +30,19 @@ const KitchenView = () => {
         } catch (err) {
             console.error('Fetch error', err);
         }
-    };
+    }, [user?.id, token]);
 
     useEffect(() => {
         if (user?.id) {
             fetchOrders();
-            const interval = setInterval(fetchOrders, 10000); // Poll every 10s
+            const interval = setInterval(fetchOrders, 10000);
             return () => clearInterval(interval);
         }
-    }, [user?.id]);
+    }, [fetchOrders]);
 
     const updateStatus = async (orderId, newStatus) => {
         if (!user?.id) {
-            alert('Authentication error. Please log in again.');
+            notify.error('Authentication error. Please log in again.');
             return;
         }
 
@@ -52,7 +57,7 @@ const KitchenView = () => {
             });
             fetchOrders();
         } catch (err) {
-            alert('Update failed');
+            notify.error('Update failed');
         }
     };
 
@@ -376,7 +381,7 @@ const KitchenView = () => {
                     </div>
                     <div>
                         <h1 className="header-title" style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Kitchen</h1>
-                        <p className="header-subtitle" style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>Terminal v2.0</p>
+                        <p className="header-subtitle" style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>Kitchen Terminal</p>
                     </div>
                 </div>
 

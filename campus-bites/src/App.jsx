@@ -3,6 +3,8 @@ import SplashScreen from './components/SplashScreen'
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
+import { ToastProvider } from './components/Toast'
+import ScrollToTop from './components/ScrollToTop'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -55,6 +57,8 @@ function App() {
         <AuthProvider>
             <CartProvider>
                 <Router>
+                    <ToastProvider />
+                    <ScrollToTop />
                     <Routes>
                         <Route path="/" element={<Login />} />
                         <Route path="/register" element={<Register />} />

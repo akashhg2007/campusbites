@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { Home, Search, ShoppingBag, User, ChefHat, Receipt } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Home, ShoppingBag, User, Receipt } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
+import { emitSocket } from '../hooks/useSocket';
 
 const Dashboard = () => {
     const { cartCount } = useCart();
+    const { user } = useAuth();
     const location = useLocation();
+
+    useEffect(() => {
+        if (user?.id) emitSocket('join-user', user.id);
+    }, [user?.id]);
 
     const isActive = (path) => location.pathname === path;
 
@@ -33,6 +41,11 @@ const Dashboard = () => {
             }}>
                 <Outlet />
             </main>
+
+            {/* Theme Toggle */}
+            <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 1001 }}>
+                <ThemeToggle />
+            </div>
 
             {/* Bottom Floating Dock Navigation */}
             <nav style={{
