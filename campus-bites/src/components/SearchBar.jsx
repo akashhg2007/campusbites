@@ -1,7 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, X, Star, Clock, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Fuse from 'fuse.js';
+
+const useDebounce = (value, delay) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(timer);
+    }, [value, delay]);
+    return debouncedValue;
+};
 
 const SearchBar = ({ products, onSelect, onAddToCart }) => {
     const [query, setQuery] = useState('');
@@ -12,21 +21,23 @@ const SearchBar = ({ products, onSelect, onAddToCart }) => {
         try { return JSON.parse(localStorage.getItem('recentSearches') || '[]'); } catch { return []; }
     });
 
-    const fuse = useMemo(() => new Fuse(products, {
+    const debouncedQuery = useDebounce(query, 200);
+
+    const fuse = useMemo(() => new Fuse(products || [], {
         keys: ['name', 'description', 'category', 'tags'],
         threshold: 0.3,
         ignoreLocation: true
     }), [products]);
 
     const results = useMemo(() => {
-        if (!query) return [];
-        let items = fuse.search(query).map(r => r.item);
+        if (!debouncedQuery) return [];
+        let items = fuse.search(debouncedQuery).map(r => r.item);
         items = items.filter(i => i.price >= priceRange[0] && i.price <= priceRange[1]);
         if (sort === 'price-low') items.sort((a, b) => a.price - b.price);
         else if (sort === 'price-high') items.sort((a, b) => b.price - a.price);
         else if (sort === 'popular') items.sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0));
         return items;
-    }, [query, fuse, priceRange, sort]);
+    }, [debouncedQuery, fuse, priceRange, sort]);
 
     const handleSearch = (q) => {
         setQuery(q);

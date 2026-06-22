@@ -23,7 +23,8 @@ export const useProducts = (category) => {
     return useQuery({
         queryKey: ['products', category],
         queryFn: () => fetchWithAuth(`/api/products${category && category !== 'All' ? `?category=${category}` : ''}`),
-        staleTime: 30000
+        staleTime: 300000,
+        cacheTime: 600000
     });
 };
 

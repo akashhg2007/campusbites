@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
-    Star, Clock, Search, TrendingUp, Sparkles, Filter,
+    Star, Clock, Sparkles, Filter,
     Plus, User, Mail, Phone, MapPin, Instagram, Twitter
 } from 'lucide-react';
 import API_URL from '../apiConfig';
-import { useRecommendations } from '../hooks/useQueries';
+import { useProducts, useRecommendations } from '../hooks/useQueries';
 import { useVoiceOrder } from '../hooks/useVoiceOrder';
 import VoiceButton from '../components/VoiceButton';
 import SearchBar from '../components/SearchBar';
@@ -25,15 +25,14 @@ const CONTACT_INFO = {
 };
 
 const Menu = () => {
-    const [products, setProducts] = useState([]);
     const [category, setCategory] = useState('All');
-    const [foodTypeFilter, setFoodTypeFilter] = useState('all'); // 'all', 'veg', 'nonveg'
+    const [foodTypeFilter, setFoodTypeFilter] = useState('all');
     const { addToCart } = useCart();
     const { user } = useAuth();
-    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [show3D, setShow3D] = useState(false);
     const { data: recommendations } = useRecommendations();
+    const { data: products = [], isLoading: loading } = useProducts(category);
 
     const handleVoiceResult = useCallback((parsed) => {
         parsed.items.forEach(({ product, quantity }) => {
@@ -41,31 +40,7 @@ const Menu = () => {
         });
     }, [addToCart]);
 
-    const { isListening, transcript, startListening, stopListening } = useVoiceOrder(products, handleVoiceResult);
-
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const res = await fetch(`${API_URL}/api/products`);
-                if (!res.ok) throw new Error('Failed to fetch');
-                const data = await res.json();
-                setProducts(data);
-            } catch (err) {
-                console.log('Using mock data');
-                setProducts([
-                    { _id: '1', name: 'Samosa', price: 20, category: 'Snacks', image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=60', description: 'Crispy fried pastry', isBestSeller: true },
-                    { _id: '2', name: 'Vada Pav', price: 25, category: 'Snacks', image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=500&auto=format&fit=crop&q=60', description: 'Mumbai favorite', isSpicy: true },
-                    { _id: '3', name: 'Veg Sandwich', price: 40, category: 'Snacks', image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=500&auto=format&fit=crop&q=60', description: 'Grilled vegetable sandwich' },
-                    { _id: '4', name: 'Masala Chai', price: 15, category: 'Beverages', image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=60', description: 'Spiced Indian tea', isPopular: true },
-                    { _id: '5', name: 'Paneer Tikka', price: 120, category: 'Snacks', image: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=500&auto=format&fit=crop&q=60', description: 'Grilled paneer cubes', isBestSeller: true },
-                    { _id: '6', name: 'Cold Coffee', price: 45, category: 'Beverages', image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=500&auto=format&fit=crop&q=60', description: 'Refreshing cold coffee' }
-                ]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProducts();
-    }, []);
+    const { isListening, transcript, startListening, stopListening } = useVoiceOrder(products || [], handleVoiceResult);
 
     const categories = [
         { name: 'All', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&h=200&fit=crop' },
@@ -76,14 +51,17 @@ const Menu = () => {
         { name: 'Desserts', image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=200&h=200&fit=crop' }
     ];
 
-    const filteredProducts = products.filter(p => {
-        const matchesCategory = category === 'All' || p.category === category;
-        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFoodType = foodTypeFilter === 'all' ||
-            (foodTypeFilter === 'veg' && p.isVeg === true) ||
-            (foodTypeFilter === 'nonveg' && p.isVeg === false);
-        return matchesCategory && matchesSearch && matchesFoodType;
-    });
+    const filteredProducts = useMemo(() => {
+        if (!products || !products.length) return [];
+        return products.filter(p => {
+            const matchesCategory = category === 'All' || p.category === category;
+            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesFoodType = foodTypeFilter === 'all' ||
+                (foodTypeFilter === 'veg' && p.isVeg === true) ||
+                (foodTypeFilter === 'nonveg' && p.isVeg === false);
+            return matchesCategory && matchesSearch && matchesFoodType;
+        });
+    }, [products, category, searchQuery, foodTypeFilter]);
 
     const shimmerStyle = {
         background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)',
