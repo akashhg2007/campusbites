@@ -43,7 +43,7 @@ const GroupOrder = ({ onAddItems }) => {
 
     const copyCode = () => {
         if (group?.code) {
-            navigator.clipboard.writeText(group.code);
+            try { navigator.clipboard.writeText(group.code); } catch {}
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }

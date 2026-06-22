@@ -28,7 +28,7 @@ const UPIPayment = ({ amount, orderId, onSuccess }) => {
 
     const copyUPI = () => {
         if (upiData?.upiUrl) {
-            navigator.clipboard.writeText(upiData.upiUrl);
+            try { navigator.clipboard.writeText(upiData.upiUrl); } catch {}
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
