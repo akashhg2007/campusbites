@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Minus, Plus, Clock, ShoppingBag, ArrowRight, Heart, Trash2 } from 'lucide-react';
@@ -8,6 +8,8 @@ import UPIPayment from '../components/UPIPayment';
 import GroupOrder from '../components/GroupOrder';
 import SmartPickupTime from '../components/SmartPickupTime';
 import AddressBook from '../components/AddressBook';
+import OrderSuccess from '../components/OrderSuccess';
+import SwipeableCartItem from '../components/SwipeableCartItem';
 import { notify } from '../components/Toast';
 
 import API_URL from '../apiConfig';
@@ -19,6 +21,7 @@ const Cart = () => {
     const [isDonationChecked, setIsDonationChecked] = useState(false);
     const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('razorpay');
+    const [orderSuccess, setOrderSuccess] = useState(null);
     const navigate = useNavigate();
 
     const taxAmount = Math.round(cartTotal * 0.05);
@@ -85,9 +88,9 @@ const Cart = () => {
                         });
 
                         if (verifyRes.ok) {
+                            const orderData = await verifyRes.json();
                             clearCart();
-                            notify.success('Order placed successfully!');
-                            navigate('/dashboard/orders');
+                            setOrderSuccess(orderData.order);
                         } else {
                             notify.error('Payment verification failed');
                         }
@@ -179,115 +182,19 @@ const Cart = () => {
     }
 
     return (
+        <>
         <div style={{ padding: '2rem 1rem 8rem 1rem', color: 'white' }}>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '2rem' }}>Cart</h1>
 
             {/* Cart Items List */}
             <div style={{ marginBottom: '2rem' }}>
                 {cartItems.map(item => (
-                    <div key={item._id} className="glass-panel" style={{
-                        marginBottom: '1rem',
-                        padding: '1rem',
-                        borderRadius: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem'
-                    }}>
-                        {/* Tiny Image Thumbnail */}
-                        <div style={{ width: '60px', height: '60px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
-                            <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            {/* Veg/Non-Veg Badge on Image */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '4px',
-                                right: '4px',
-                                width: '14px',
-                                height: '14px',
-                                border: `1.5px solid ${item.isVeg !== false ? '#22C55E' : '#EF4444'}`,
-                                borderRadius: '2px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'white'
-                            }}>
-                                {item.isVeg !== false ? (
-                                    <div style={{
-                                        width: '6px',
-                                        height: '6px',
-                                        borderRadius: '50%',
-                                        background: '#22C55E'
-                                    }} />
-                                ) : (
-                                    <div style={{
-                                        width: 0,
-                                        height: 0,
-                                        borderLeft: '3px solid transparent',
-                                        borderRight: '3px solid transparent',
-                                        borderBottom: '5px solid #EF4444'
-                                    }} />
-                                )}
-                            </div>
-                        </div>
-
-                        <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{item.name}</h3>
-                                {/* Veg/Non-Veg Badge next to name */}
-                                <div style={{
-                                    width: '14px',
-                                    height: '14px',
-                                    border: `1.5px solid ${item.isVeg !== false ? '#22C55E' : '#EF4444'}`,
-                                    borderRadius: '2px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'white',
-                                    flexShrink: 0
-                                }}>
-                                    {item.isVeg !== false ? (
-                                        <div style={{
-                                            width: '6px',
-                                            height: '6px',
-                                            borderRadius: '50%',
-                                            background: '#22C55E'
-                                        }} />
-                                    ) : (
-                                        <div style={{
-                                            width: 0,
-                                            height: 0,
-                                            borderLeft: '3px solid transparent',
-                                            borderRight: '3px solid transparent',
-                                            borderBottom: '5px solid #EF4444'
-                                        }} />
-                                    )}
-                                </div>
-                            </div>
-                            <p style={{ color: '#9CA3AF', fontSize: '0.9rem', margin: 0 }}>₹{item.price}</p>
-                        </div>
-
-                        {/* Quantity Controls */}
-                        <div style={{
-                            background: '#27272A',
-                            borderRadius: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '4px'
-                        }}>
-                            <button
-                                onClick={() => item.quantity > 1 ? updateQuantity(item._id, -1) : removeFromCart(item._id)}
-                                style={{ background: 'transparent', border: 'none', color: '#E23744', padding: '6px', cursor: 'pointer' }}
-                            >
-                                <Minus size={16} />
-                            </button>
-                            <span style={{ margin: '0 8px', fontWeight: 600, fontSize: '0.9rem' }}>{item.quantity}</span>
-                            <button
-                                onClick={() => updateQuantity(item._id, 1)}
-                                style={{ background: 'transparent', border: 'none', color: '#E23744', padding: '6px', cursor: 'pointer' }}
-                            >
-                                <Plus size={16} />
-                            </button>
-                        </div>
-                    </div>
+                    <SwipeableCartItem
+                        key={item._id}
+                        item={item}
+                        onUpdateQuantity={updateQuantity}
+                        onRemove={removeFromCart}
+                    />
                 ))}
             </div>
 
@@ -510,6 +417,15 @@ const Cart = () => {
                 </div>
             </button>
         </div>
+
+        {/* Order Success Overlay */}
+        {orderSuccess && (
+            <OrderSuccess
+                orderId={orderSuccess._id}
+                onDismiss={() => { setOrderSuccess(null); navigate('/dashboard/orders'); }}
+            />
+        )}
+        </>
     );
 };
 
