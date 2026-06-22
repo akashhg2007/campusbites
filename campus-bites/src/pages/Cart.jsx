@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Minus, Plus, Clock, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Minus, Plus, Clock, ShoppingBag, ArrowRight, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import UPIPayment from '../components/UPIPayment';
 import GroupOrder from '../components/GroupOrder';

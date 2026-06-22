@@ -59,7 +59,8 @@ export const useRecommendations = () => {
         queryKey: ['recommendations'],
         queryFn: () => fetchWithAuth('/api/recommendations'),
         enabled: !!user,
-        staleTime: 60000
+        staleTime: 60000,
+        retry: false
     });
 };
 
@@ -68,7 +69,8 @@ export const useLoyalty = () => {
     return useQuery({
         queryKey: ['loyalty'],
         queryFn: () => fetchWithAuth('/api/loyalty/balance'),
-        enabled: !!user
+        enabled: !!user,
+        retry: false
     });
 };
 
