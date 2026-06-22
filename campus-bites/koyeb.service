@@ -1,0 +1,25 @@
+{
+    "name": "campus-bites-api",
+    "build": {
+        "builder": "NIXPACKS"
+    },
+    "services": [
+        {
+            "name": "campus-bites-api",
+            "type": "WEB",
+            "buildCommand": "cd campus-bites/server && npm install",
+            "startCommand": "cd campus-bites/server && node index.js",
+            "instanceType": "micro",
+            "healthcheckPath": "/",
+            "envVars": [
+                { "key": "PORT", "value": "8080" },
+                { "key": "NODE_ENV", "value": "production" },
+                { "key": "MONGO_URI", "sync": false },
+                { "key": "JWT_SECRET", "sync": false },
+                { "key": "GOOGLE_CLIENT_ID", "sync": false },
+                { "key": "RAZORPAY_KEY_ID", "sync": false },
+                { "key": "RAZORPAY_KEY_SECRET", "sync": false }
+            ]
+        }
+    ]
+}
