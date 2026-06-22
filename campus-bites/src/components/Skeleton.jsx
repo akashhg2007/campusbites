@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const shimmer = {
     background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)',
@@ -7,12 +7,17 @@ const shimmer = {
     borderRadius: '12px'
 };
 
-const style = document.createElement('style');
-style.textContent = `@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`;
-if (!document.querySelector('#skeleton-styles')) {
-    style.id = 'skeleton-styles';
-    document.head.appendChild(style);
-}
+const SkeletonStyles = () => {
+    useEffect(() => {
+        if (typeof document !== 'undefined' && !document.querySelector('#skeleton-styles')) {
+            const style = document.createElement('style');
+            style.id = 'skeleton-styles';
+            style.textContent = `@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`;
+            document.head.appendChild(style);
+        }
+    }, []);
+    return null;
+};
 
 export const SkeletonCard = () => (
     <div style={{ ...shimmer, height: '240px', borderRadius: '24px' }} />
@@ -68,7 +73,10 @@ export const SkeletonProfile = () => (
 );
 
 export const SkeletonGrid = ({ count = 6, Component = SkeletonProductCard }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-        {Array.from({ length: count }).map((_, i) => <Component key={i} />)}
-    </div>
+    <>
+        <SkeletonStyles />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+            {Array.from({ length: count }).map((_, i) => <Component key={i} />)}
+        </div>
+    </>
 );

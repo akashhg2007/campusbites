@@ -10,8 +10,10 @@ import API_URL from '../apiConfig';
 import { useRecommendations } from '../hooks/useQueries';
 import { useVoiceOrder } from '../hooks/useVoiceOrder';
 import VoiceButton from '../components/VoiceButton';
-import FoodCard3DPreview from '../components/FoodCard3D';
 import { SkeletonGrid, SkeletonProductCard } from '../components/Skeleton';
+import { notify } from '../components/Toast';
+
+const FoodCard3DPreview = React.lazy(() => import('../components/FoodCard3D'));
 
 const CONTACT_INFO = {
     email: 'support@campusbites.com',
@@ -494,11 +496,12 @@ const Menu = () => {
                     gap: '1rem'
                 }}>
                     {show3D && filteredProducts.map((product) => (
-                            <FoodCard3DPreview
-                                key={product._id}
-                                product={product}
-                                onAddToCart={() => addToCart(product)}
-                            />
+                            <React.Suspense key={product._id} fallback={<div style={{ height: 200, background: 'rgba(255,255,255,0.03)', borderRadius: 24 }} />}>
+                                <FoodCard3DPreview
+                                    product={product}
+                                    onAddToCart={() => addToCart(product)}
+                                />
+                            </React.Suspense>
                         ))}
                     {!show3D && filteredProducts.map((product, idx) => (
                         <div
