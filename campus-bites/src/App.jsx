@@ -28,6 +28,7 @@ import LecturerLogin from './pages/lecturer/LecturerLogin'
 import LecturerPortal from './pages/lecturer/LecturerPortal'
 import DeliveryLogin from './pages/delivery/DeliveryLogin'
 import DeliveryPortal from './pages/delivery/DeliveryPortal'
+import CanteenBoard from './pages/CanteenBoard'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles }) => {
@@ -126,6 +127,9 @@ function App() {
                                 <DeliveryPortal />
                             </ProtectedRoute>
                         } />
+
+                        {/* Canteen Display Board */}
+                        <Route path="/canteen-board" element={<CanteenBoard />} />
 
                     </Routes>
                 </Router>

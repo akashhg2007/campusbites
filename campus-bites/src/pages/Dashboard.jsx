@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Home, ShoppingBag, User, Receipt } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import QuickReorder from '../components/QuickReorder';
 import { emitSocket } from '../hooks/useSocket';
 
 const Dashboard = () => {
@@ -34,11 +35,15 @@ const Dashboard = () => {
             {/* Main Content Area */}
             <main style={{
                 width: '100%',
-                maxWidth: '600px', // Mobile-first constraint
+                maxWidth: '600px',
                 margin: '0 auto',
                 minHeight: '100vh',
-                position: 'relative'
+                position: 'relative',
+                padding: '0 1rem'
             }}>
+                <div style={{ paddingTop: '1rem' }}>
+                    <QuickReorder />
+                </div>
                 <Outlet />
             </main>
 
